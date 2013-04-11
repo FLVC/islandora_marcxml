@@ -61,7 +61,7 @@ function islandora_marcxml_transform_mods_to_marcxml(AbstractFedoraObject $objec
 function islandora_marcxml_transform_marc_to_html(AbstractFedoraObject $object) {
   return islandora_marcxml_run_xsl_transform(array(
     'input' => islandora_marcxml_transform_mods_to_marcxml($object),
-    'xsl' => drupal_get_path('module', 'islandora_marcxml') . '/xsl/MARC21slim2HTML.xsl',
+    'xsl' => drupal_get_path('module', 'islandora_marcxml') . '/xsl/MARC21slim2HTML_FLVC.xsl',
   ));
 }
 
