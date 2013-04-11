@@ -54,13 +54,14 @@
 			<td>
 				<xsl:value-of select="@ind1"/>
 				<xsl:value-of select="@ind2"/>
+				<xsl:text> </xsl:text>
 				<xsl:apply-templates select="marc:subfield"/>
 			</td>
 		</tr>
 	</xsl:template>
 	
 	<xsl:template match="marc:subfield">
-		<strong>|<xsl:value-of select="@code"/></strong> <xsl:value-of select="."/>
+		<strong>|<xsl:value-of select="@code"/></strong><xsl:text> </xsl:text><xsl:value-of select="."/><xsl:text> </xsl:text>
 	</xsl:template>
 
 </xsl:stylesheet>
