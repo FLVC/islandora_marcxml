@@ -30,13 +30,13 @@ function islandora_marcxml_run_xsl_transform($info) {
 /**
  * Grabs MODS off the given object, and returns it transformed to MARCXML.
  *
- * @param AbstractFedoraObject $object
+ * @param AbstractObject $object
  *   A Fedora object containing a MODS datastream.
  *
  * @return string
  *   The transformed XML, as a string.
  */
-function islandora_marcxml_transform_mods_to_marcxml(AbstractFedoraObject $object) {
+function islandora_marcxml_transform_mods_to_marcxml(AbstractObject $object) {
   if (!isset($object['MODS'])) {
     drupal_not_found();
   }
@@ -52,13 +52,13 @@ function islandora_marcxml_transform_mods_to_marcxml(AbstractFedoraObject $objec
  *
  * First, transforms MODS to MARCXML, and then MARCXML to HTML.
  *
- * @param AbstractFedoraObject $object
+ * @param AbstractObject $object
  *   A Fedora object containing a MODS datastream.
  *
  * @return string
  *   The transformed HTML, as a string.
  */
-function islandora_marcxml_transform_marc_to_html(AbstractFedoraObject $object) {
+function islandora_marcxml_transform_marc_to_html(AbstractObject $object) {
   return islandora_marcxml_run_xsl_transform(array(
     'input' => islandora_marcxml_transform_mods_to_marcxml($object),
     'xsl' => drupal_get_path('module', 'islandora_marcxml') . '/xsl/MARC21slim2HTML_FLVC.xsl',
@@ -68,7 +68,7 @@ function islandora_marcxml_transform_marc_to_html(AbstractFedoraObject $object) 
 /**
  * Populates the MODS datastream with the transformed MARCXML.
  *
- * @param AbstractFedoraObject $object
+ * @param AbstractObject $object
  *   A Fedora object.
  * @param object $file
  *   A Drupal file object containing the MARCXML.
@@ -76,7 +76,7 @@ function islandora_marcxml_transform_marc_to_html(AbstractFedoraObject $object) 
  * @return bool
  *   TRUE if the MODS datastream was created FALSE if it was updated.
  */
-function islandora_marcxml_populate_mods(AbstractFedoraObject $object, $file) {
+function islandora_marcxml_populate_mods(AbstractObject $object, $file) {
   $created = FALSE;
   $transform_args = array(
     'xsl' => drupal_get_path('module', 'islandora_marcxml') . '/xsl/MARC21slim2MODS3-4_FLVC.xsl',
@@ -98,13 +98,13 @@ function islandora_marcxml_populate_mods(AbstractFedoraObject $object, $file) {
 /**
  * Renders the MARCXML tab.
  *
- * @pararm AbstractFedoraObject $object
+ * @pararm AbstractObject $object
  *   The object the MARCXML belongs to.
  *
  * @return array
  *   A renderable array representing the tab.
  */
-function islandora_marcxml_view(AbstractFedoraObject $object) {
+function islandora_marcxml_view(AbstractObject $object) {
   return array(
     'link' => array(
       '#markup' => l(t('Download MARCXML'), "islandora/object/{$object->id}/download_mods_as_marcxml"),
