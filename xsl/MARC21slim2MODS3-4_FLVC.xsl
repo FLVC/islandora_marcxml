@@ -6,6 +6,13 @@
 	<xsl:output encoding="UTF-8" indent="yes" method="xml"/>
 	<xsl:strip-space elements="*"/>
 
+<!-- FLVC version, written by Caitlin Nelson for the Islandora project
+	
+	v2: (06/2013) removed the modsCollection wrapper option - all records will just have <mods> wrappers 
+	v1: (04/2013) edits to 035 field, 260 field for punctuation, remove duplicate <dateIssued> field
+
+-->
+
 	<!-- Maintenance note: For each revision, change the content of <recordInfo><recordOrigin> to reflect the new revision number.
 	MARC21slim2MODS3-4 (Revision 1.85) 20130307
 
@@ -98,14 +105,21 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 	<xsl:template match="/">
 		<xsl:choose>
 			<xsl:when test="//marc:collection">
-				<modsCollection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+				<!-- 6/2013 removed modsCollection - not working in the Islandora Form Editor
+					<modsCollection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 					xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-4.xsd">
 					<xsl:for-each select="//marc:collection/marc:record">
 						<mods version="3.4">
 							<xsl:call-template name="marcRecord"/>
 						</mods>
 					</xsl:for-each>
-				</modsCollection>
+					</modsCollection> -->
+				<mods xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="3.4"
+					xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-4.xsd">
+					<xsl:for-each select="//marc:record">
+						<xsl:call-template name="marcRecord"/>
+					</xsl:for-each>
+				</mods>
 			</xsl:when>
 			<xsl:otherwise>
 				<mods xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="3.4"
