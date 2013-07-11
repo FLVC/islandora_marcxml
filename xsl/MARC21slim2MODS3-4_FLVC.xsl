@@ -1,21 +1,24 @@
 <xsl:stylesheet xmlns="http://www.loc.gov/mods/v3" xmlns:marc="http://www.loc.gov/MARC21/slim"
 	xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	exclude-result-prefixes="xlink marc" version="1.0">
-	<!--<xsl:include href="http://www.loc.gov/standards/marcxml/xslt/MARC21slimUtils.xsl"/> -->
+	<!-- <xsl:include href="http://www.loc.gov/standards/marcxml/xslt/MARC21slimUtils.xsl"/> -->
 	<xsl:include href="MARC21slimUtils.xsl"/>
 	<xsl:output encoding="UTF-8" indent="yes" method="xml"/>
 	<xsl:strip-space elements="*"/>
 
-<!-- FLVC version, written by Caitlin Nelson for the Islandora project
-	
-	v2: (06/2013) removed the modsCollection wrapper option - all records will just have <mods> wrappers 
-	v1: (04/2013) edits to 035 field, 260 field for punctuation, remove duplicate <dateIssued> field
-
--->
+	<!-- FLVC version, written by Caitlin Nelson for the Islandora project
+		
+		v4: (7-11-2013) updated PURL handling
+		v3. (6-27-2013) merged in LOC updated 1.86; updated marc:collection handling;
+		v2: (06/2013) removed the modsCollection wrapper option - all records will just have <mods> wrappers 
+		v1: (04/2013) edits to 035 field, 260 field for punctuation, remove duplicate <dateIssued> field
+		
+	-->
 
 	<!-- Maintenance note: For each revision, change the content of <recordInfo><recordOrigin> to reflect the new revision number.
-	MARC21slim2MODS3-4 (Revision 1.85) 20130307
+	MARC21slim2MODS3-4 (Revision 1.86) 20130610
 
+Revision 1.86 - Refined 653 mapping - tmee 2013/06/10
 Revision 1.85 - Fixed 245 $c - tmee 2013/03/07
 Revision 1.84 - Fixed 1.35 and 1.36 date mapping for 008 when 008/06=e,p,r,s,t so only 008/07-10 displays, rather than 008/07-14 - tmee 2013/02/01   
 Revision 1.83 - Deleted mapping for 534 to note - tmee 2013/01/18
@@ -105,8 +108,10 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 	<xsl:template match="/">
 		<xsl:choose>
 			<xsl:when test="//marc:collection">
-				<!-- 6/2013 removed modsCollection - not working in the Islandora Form Editor
-					<modsCollection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+				<!-- 6/2013 Changed the marc:collection template so that it (1) removes the collection tag, and (2)
+							takes only the first <marc:record> element (thereby ignoring all other potential records
+							in the file  -->
+				<!-- <modsCollection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 					xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-4.xsd">
 					<xsl:for-each select="//marc:collection/marc:record">
 						<mods version="3.4">
@@ -114,12 +119,12 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 						</mods>
 					</xsl:for-each>
 					</modsCollection> -->
-				<mods xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="3.4"
+				<xsl:for-each select="//marc:record[1]">
+					<mods xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="3.4"
 					xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-4.xsd">
-					<xsl:for-each select="//marc:record">
 						<xsl:call-template name="marcRecord"/>
-					</xsl:for-each>
-				</mods>
+					</mods>
+				</xsl:for-each>
 			</xsl:when>
 			<xsl:otherwise>
 				<mods xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="3.4"
@@ -658,20 +663,19 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 					<placeTerm>
 						<xsl:attribute name="type">text</xsl:attribute>
 						<!-- This code does not remove the preceding bracket, in order to round-trip smoothly back to MARC -->
+						<!-- <xsl:call-template name="chopPunctuationFront">
+								<xsl:with-param name="chopString">
+								<xsl:call-template name="chopPunctuation">
+									<xsl:with-param name="chopString" select="."/>
+								</xsl:call-template>
+							</xsl:with-param>
+							</xsl:call-template> --> 
 						<xsl:call-template name="chopPunctuation">
 							<xsl:with-param name="chopString" select="."/>
 							<xsl:with-param name="punctuation">
 								<xsl:text>:,;/ </xsl:text>
 							</xsl:with-param>
 						</xsl:call-template>
-						<!-- original code
-							<xsl:call-template name="chopPunctuationFront">
-							<xsl:with-param name="chopString">
-								<xsl:call-template name="chopPunctuation">
-									<xsl:with-param name="chopString" select="."/>
-								</xsl:call-template>
-							</xsl:with-param>
-						</xsl:call-template> -->
 					</placeTerm>
 				</place>
 			</xsl:for-each>
@@ -777,6 +781,8 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 
 
 
+
+
 			<!-- tmee 1.35 and 1.36 and 1.84-->
 
 			<xsl:if
@@ -792,8 +798,7 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 				test="($controlField008-6='e' or $controlField008-6='p' or $controlField008-6='r' or $controlField008-6='s' or $controlField008-6='t') and not($leader6='d' or $leader6='f' or $leader6='p' or $leader6='t')">
 				<xsl:if test="$controlField008-7-10 and ($controlField008-7-10 != $dataField260c)">
 					<dateIssued encoding="marc">
-						<xsl:value-of select="$controlField008-7-10"/>
-					</dateIssued>
+						<xsl:value-of select="$controlField008-7-10"/></dateIssued>
 				</xsl:if>
 			</xsl:if>
 
@@ -834,7 +839,7 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 			<!-- tmee 1.77 008-06 dateIssued for value 's' -->
 			<!-- FLVC commented this out - I believe this does essentially the same thing as the second if statement above
 				and is creating a duplicate <dateIssued> field -->
-				<!-- <xsl:if test="$controlField008-6='s'">
+			<!-- <xsl:if test="$controlField008-6='s'">
 				<xsl:if test="$controlField008-7-10">
 					<dateIssued encoding="marc">
 						<xsl:value-of select="$controlField008-7-10"/>
@@ -1969,10 +1974,10 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 		<xsl:for-each select="marc:datafield[@tag=852]">
 			<xsl:call-template name="createLocationFrom852"/>
 		</xsl:for-each>
-
-		<xsl:for-each select="marc:datafield[@tag=856]">
-			<xsl:call-template name="createLocationFrom856"/>
-		</xsl:for-each>
+		
+		<xsl:call-template name="createLocationFrom856_PURL"/>
+		<xsl:call-template name="createLocationFrom856_URL"/>
+		
 
 		<xsl:for-each select="marc:datafield[@tag=490][@ind1=0]">
 			<xsl:call-template name="createRelatedItemFrom490"/>
@@ -2501,7 +2506,7 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 			</identifier>
 		</xsl:for-each>
 
-		<!-- FLVC edit -->
+		<!-- FLVC edit to grab whatever is in parentheses before the IID and place it in a @type -->
 		<xsl:for-each select="marc:datafield[@tag='035']">
 			<xsl:choose>
 				<xsl:when test="marc:subfield[@code='a'][contains(text(), '(OCoLC)')]">
@@ -2525,12 +2530,8 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 			</xsl:choose>
 		</xsl:for-each>
 		
-	
 		<!-- local field for IID identifiers in PALMM -->
 		<xsl:for-each select="marc:datafield[@tag='598']">
-			<!-- <caitlin_test>
-				<xsl:value-of select="normalize-space(substring-after(../marc:datafield[@tag='035'][marc:subfield[@code='a'][not(contains(text(), '(OCoLC)'))][starts-with(text(), '(')]], ')'))"/>
-			</caitlin_test> -->
 			<xsl:if test="marc:subfield[@code='a'] != (normalize-space(substring-after(../marc:datafield[@tag='035'][marc:subfield[@code='a'][not(contains(text(), '(OCoLC)'))][starts-with(text(), '(')]], ')')))">
 				<identifier type="IID">
 					<xsl:value-of select="marc:subfield[@code='a']"/>
@@ -2538,11 +2539,12 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 			</xsl:if>
 		</xsl:for-each>
 		
-		<!-- FLVC addition: grabs the PID of exported material and inserts it as identifier -->
+		<!-- FLVC addition: grabs the PID of exported material and inserts it as identifier
+			(used only in DigiTool conversion processing -->
 		<!-- <identifier type="digitool">
 			<xsl:value-of select="document('info.xml')/root/pid"/>
-		</identifier> -->
-		
+			</identifier> -->
+
 		<xsl:for-each select="marc:datafield[@tag='037']">
 			<identifier type="stock number">
 				<xsl:if test="marc:subfield[@code='c']">
@@ -2560,6 +2562,7 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 
 
 		<!-- 1.51 tmee 20100129-->
+		<!-- FLVC: duplicate code in the LOC code?
 		<xsl:for-each select="marc:datafield[@tag='856'][marc:subfield[@code='u']]">
 			<xsl:if
 				test="starts-with(marc:subfield[@code='u'],'urn:hdl') or starts-with(marc:subfield[@code='u'],'hdl') or starts-with(marc:subfield[@code='u'],'http://hdl.loc.gov') ">
@@ -2594,7 +2597,7 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 					/>
 				</identifier>
 			</xsl:if>
-		</xsl:for-each>
+		</xsl:for-each> -->
 
 		<xsl:for-each select="marc:datafield[@tag=024][@ind1=1]">
 			<identifier type="upc">
@@ -2701,8 +2704,7 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 				</recordIdentifier>
 			</xsl:for-each>
 
-			<recordOrigin>Converted from MARCXML to MODS version 3.4 using MARC21slim2MODS3-4_FLVC.xsl
-				(Revision 1.85 2013/03/07 (LOC) and 4/10/2013 (FLVC))</recordOrigin>
+			<recordOrigin>Converted from MARCXML to MODS v3.4 using MARC21slim2MODS3-4_FLVC.xsl (LOC rev 1.86 / 20130610) (FLVC v4)</recordOrigin>
 
 			<xsl:for-each select="marc:datafield[@tag=040]/marc:subfield[@code='b']">
 				<languageOfCataloging>
@@ -4078,8 +4080,11 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 			<xsl:when test="$sf06a='852'">
 				<xsl:call-template name="createLocationFrom852"/>
 			</xsl:when>
+			
+			<!-- FLVC: not sure if this will still work with new URL / PURL templates... -->
 			<xsl:when test="$sf06a='856'">
-				<xsl:call-template name="createLocationFrom856"/>
+				<xsl:call-template name="createLocationFrom856_URL"/>
+				<xsl:call-template name="createLocationFrom856_PURL"/>
 			</xsl:when>
 
 			<xsl:when test="$sf06a='490'">
@@ -5105,76 +5110,94 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 
 		<xsl:if test="@ind2=' '">
 			<subject>
+			<xsl:for-each select="marc:subfield[@code='a']">
 				<topic>
 					<xsl:value-of select="."/>
 				</topic>
+				</xsl:for-each>
 			</subject>
 		</xsl:if>
 		<xsl:if test="@ind2='0'">
 			<subject>
+				<xsl:for-each select="marc:subfield[@code='a']">
 				<topic>
 					<xsl:value-of select="."/>
 				</topic>
+				</xsl:for-each>
 			</subject>
 		</xsl:if>
-
 		<xsl:if test="@ind1='1'">
 			<subject>
+				<xsl:for-each select="marc:subfield[@code='a']">
 				<name type="personal">
 					<namePart>
 						<xsl:value-of select="."/>
 					</namePart>
 				</name>
+				</xsl:for-each>
 			</subject>
 		</xsl:if>
 		<xsl:if test="@ind1='3'">
 			<subject>
+				<xsl:for-each select="marc:subfield[@code='a']">
 				<name type="family">
 					<namePart>
 						<xsl:value-of select="."/>
 					</namePart>
 				</name>
+				</xsl:for-each>
 			</subject>
 		</xsl:if>
 		<xsl:if test="@ind2='2'">
 			<subject>
+				<xsl:for-each select="marc:subfield[@code='a']">
 				<name type="corporate">
 					<namePart>
 						<xsl:value-of select="."/>
 					</namePart>
 				</name>
+				</xsl:for-each>
 			</subject>
 		</xsl:if>
 		<xsl:if test="@ind2='3'">
 			<subject>
+				<xsl:for-each select="marc:subfield[@code='a']">
 				<name type="conference">
 					<namePart>
 						<xsl:value-of select="."/>
 					</namePart>
 				</name>
+				</xsl:for-each>
 			</subject>
 		</xsl:if>
 		<xsl:if test="@ind2=4">
 			<subject>
+				<xsl:for-each select="marc:subfield[@code='a']">
 				<temporal>
 					<xsl:value-of select="."/>
 				</temporal>
+				</xsl:for-each>
 			</subject>
 		</xsl:if>
 		<xsl:if test="@ind2=5">
 			<subject>
+				<xsl:for-each select="marc:subfield[@code='a']">
 				<geographic>
 					<xsl:value-of select="."/>
 				</geographic>
+				</xsl:for-each>
 			</subject>
 		</xsl:if>
 
 		<xsl:if test="@ind2=6">
 			<subject>
+				<xsl:for-each select="marc:subfield[@code='a']">
 				<genre>
 					<xsl:value-of select="."/>
 				</genre>
+				</xsl:for-each>
 			</subject>
+	
 		</xsl:if>
 	</xsl:template>
 
@@ -5423,37 +5446,79 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 		</location>
 	</xsl:template>
 
-	<xsl:template name="createLocationFrom856">
-		<xsl:if test="//marc:datafield[@tag=856][@ind2!=2][marc:subfield[@code='u']]">
+<!-- FLVC changes for PURL --> 
+	<xsl:template name="createLocationFrom856_PURL">
+		<xsl:choose>
+			<xsl:when test="marc:datafield[@tag=856][@ind2!='2'][marc:subfield[@code='u' and (contains(text(),'purl'))]]">
+				<xsl:for-each select="marc:datafield[@tag=856][@ind2!='2'][marc:subfield[@code='u' and (contains(text(),'purl'))]]">
+					<location displayLabel="purl">
+						<url>
+							<xsl:if test="marc:subfield[@code='y' or @code='3']">
+								<xsl:attribute name="displayLabel">
+									<xsl:call-template name="subfieldSelect">
+										<xsl:with-param name="codes">y3</xsl:with-param>
+									</xsl:call-template>
+								</xsl:attribute>
+							</xsl:if>
+							<xsl:if test="marc:subfield[@code='z']">
+								<xsl:attribute name="note">
+									<xsl:call-template name="subfieldSelect">
+										<xsl:with-param name="codes">z</xsl:with-param>
+									</xsl:call-template>
+								</xsl:attribute>
+							</xsl:if>
+							<!-- <xsl:value-of select="marc:subfield[@code='u']"/> -->
+							<!-- Calls the template below to replace 'fcla.edu' domain with 'flvc.org' domain in PURLs -->
+							<xsl:call-template name="replace-string">
+								<xsl:with-param name="text" select="marc:subfield[@code='u']"/>
+								<xsl:with-param name="replace" select="'fcla.edu'" />
+								<xsl:with-param name="with" select="'flvc.org'"/>
+							</xsl:call-template>
+						</url>
+					</location>
+				</xsl:for-each>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:for-each select="document('purl.xml')/root/purl">
+					<location>
+						<xsl:attribute name="displayLabel">
+							<xsl:text>purl</xsl:text>
+						</xsl:attribute>
+						<url>
+							<xsl:value-of select="."/>
+						</url>
+					</location>
+				</xsl:for-each>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+	
+	<!-- FLVC addition: template to replace text in a string for XSLT 1.0 -->
+	<xsl:template name="replace-string">
+		<xsl:param name="text"/>
+		<xsl:param name="replace"/>
+		<xsl:param name="with"/>
+		<xsl:choose>
+			<xsl:when test="contains($text,$replace)">
+				<xsl:value-of select="substring-before($text,$replace)"/>
+				<xsl:value-of select="$with"/>
+				<xsl:call-template name="replace-string">
+					<xsl:with-param name="text"
+						select="substring-after($text,$replace)"/>
+					<xsl:with-param name="replace" select="$replace"/>
+					<xsl:with-param name="with" select="$with"/>
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="$text"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+	
+	<xsl:template name="createLocationFrom856_URL">
+		<xsl:for-each select="marc:datafield[@tag=856][@ind2!='2'][marc:subfield[@code='u' and not(contains(text(),'purl'))]]">
 			<location>
-				<url displayLabel="electronic resource">
-					<!-- 1.41 tmee AQ1.9 added choice protocol for @usage="primary display" -->
-					<xsl:variable name="primary">
-						<xsl:choose>
-							<xsl:when
-								test="@ind2=0 and count(preceding-sibling::marc:datafield[@tag=856] [@ind2=0])=0"
-								>true</xsl:when>
-
-							<xsl:when
-								test="@ind2=1 and 
-							count(ancestor::marc:record//marc:datafield[@tag=856][@ind2=0])=0 and 
-							count(preceding-sibling::marc:datafield[@tag=856][@ind2=1])=0"
-								>true</xsl:when>
-
-							<xsl:when
-								test="@ind2!=1 and @ind2!=0 and 
-							@ind2!=2 and count(ancestor::marc:record//marc:datafield[@tag=856 and 
-							@ind2=0])=0 and count(ancestor::marc:record//marc:datafield[@tag=856 and 
-							@ind2=1])=0 and 
-							count(preceding-sibling::marc:datafield[@tag=856][@ind2])=0"
-								>true</xsl:when>
-							<xsl:otherwise>false</xsl:otherwise>
-						</xsl:choose>
-					</xsl:variable>
-					<xsl:if test="$primary='true'">
-						<xsl:attribute name="usage">primary display</xsl:attribute>
-					</xsl:if>
-
+				<url>
 					<xsl:if test="marc:subfield[@code='y' or @code='3']">
 						<xsl:attribute name="displayLabel">
 							<xsl:call-template name="subfieldSelect">
@@ -5471,7 +5536,7 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 					<xsl:value-of select="marc:subfield[@code='u']"/>
 				</url>
 			</location>
-		</xsl:if>
+		</xsl:for-each>
 	</xsl:template>
 
 	<!-- accessCondition 506 540 -->
