@@ -2227,8 +2227,9 @@
 			<xsl:with-param name="ind1">0</xsl:with-param>
 			<xsl:with-param name="subfields">
 				<!-- v3 displaylabel -->
+				<!-- FLVC edit: displayLabel goes to $y instead of 3 -->
 				<xsl:for-each select="@displaylabel">
-					<marc:subfield code="3">
+					<marc:subfield code="y">
 						<xsl:value-of select="."/>
 					</marc:subfield>
 				</xsl:for-each>
