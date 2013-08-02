@@ -579,7 +579,8 @@
 		</xsl:call-template>	
 	</xsl:template>
 	<!-- v3 role-->
-	<xsl:template match="mods:name[@type='personal'][mods:role/mods:roleTerm[@type='text']='creator']">
+	<!-- FLVC edit: MARC-to-MODS will 100, 110, or 111 will map with @usage="primary" so we look for that in the round-trip back to tag="1XX" -->
+	<xsl:template match="mods:name[@type='personal'][mods:role/mods:roleTerm[@type='text']='creator'] | mods:name[@type='personal' and @usage='primary']">
 		<xsl:call-template name="datafield">
 			<xsl:with-param name="tag">100</xsl:with-param>
 			<xsl:with-param name="ind1">1</xsl:with-param>
@@ -623,7 +624,7 @@
 		</xsl:call-template>	
 	</xsl:template>
 	<!-- v3 role -->
-	<xsl:template match="mods:name[@type='corporate'][mods:role/mods:roleTerm[@type='text']='creator']">
+	<xsl:template match="mods:name[@type='corporate'][mods:role/mods:roleTerm[@type='text']='creator'] | mods:name[@type='corporate' and @usage='primary']">
 		<xsl:call-template name="datafield">
 			<xsl:with-param name="tag">110</xsl:with-param>
 			<xsl:with-param name="ind1">2</xsl:with-param>
@@ -656,7 +657,7 @@
 		</xsl:call-template>	
 	</xsl:template>
 	<!-- v3 role -->
-	<xsl:template match="mods:name[@type='conference'][mods:role/mods:roleTerm[@type='text']='creator']">
+	<xsl:template match="mods:name[@type='conference'][mods:role/mods:roleTerm[@type='text']='creator'] | mods:name[@type='conference' and @usage='primary']">
 		<xsl:call-template name="datafield">
 			<xsl:with-param name="tag">111</xsl:with-param>
 			<xsl:with-param name="ind1">2</xsl:with-param>
@@ -674,7 +675,7 @@
 		</xsl:call-template>	
 	</xsl:template>
 	<!-- v3 role -->
-	<xsl:template match="mods:name[@type='personal'][mods:role/mods:roleTerm[@type='text']!='creator' or not(mods:role)]">
+	<xsl:template match="mods:name[@type='personal' and not(@usage='primary')][mods:role/mods:roleTerm[@type='text']!='creator' or not(mods:role)]">
 		<xsl:call-template name="datafield">
 			<xsl:with-param name="tag">700</xsl:with-param>
 			<xsl:with-param name="ind1">1</xsl:with-param>
@@ -713,7 +714,7 @@
 		</xsl:call-template>	
 	</xsl:template>
 	<!-- v3 role -->
-	<xsl:template match="mods:name[@type='corporate'][mods:role/mods:roleTerm[@type='text']!='creator' or not(mods:role)]">
+	<xsl:template match="mods:name[@type='corporate' and not(@usage='primary')][mods:role/mods:roleTerm[@type='text']!='creator' or not(mods:role)]">
 		<xsl:call-template name="datafield">
 			<xsl:with-param name="tag">710</xsl:with-param>
 			<xsl:with-param name="ind1">2</xsl:with-param>
@@ -744,7 +745,7 @@
 		</xsl:call-template>	
 	</xsl:template>
 	<!-- v3 role -->
-	<xsl:template match="mods:name[@type='conference'][mods:role/mods:roleTerm[@type='text']!='creator' or not(mods:role)]">
+	<xsl:template match="mods:name[@type='conference' and not(@usage='primary')][mods:role/mods:roleTerm[@type='text']!='creator' or not(mods:role)]">
 		<xsl:call-template name="datafield">
 			<xsl:with-param name="tag">711</xsl:with-param>
 			<xsl:with-param name="ind1">2</xsl:with-param>
@@ -1652,17 +1653,18 @@
 <!-- Identifiers -->	
 	
 	<!-- FLVC edit to handle IID type identifiers, no-@type identifiers, and anything else not covered by a template below -->
-	<xsl:template match="mods:identifier[@type='IID'
-						or not(@type) or not(@type='doi') 
-						or not(@type='hdl') or not(@type='isbn')
-						or not(@type='isrc') or not(@type='ismn')
-						or not(@type='issn') or not(@type='issn-l')
-						or not(@type='issue number') or not(@type='lccn')
-						or not(@type='matrix number') or not(@type='music publisher')
-						or not(@type='music plate') or not(@type='sici')
-						or not(@type='stocknumber') or not(@type='')
-						or not(@type='uri') or not(@type='upc')
-						or not(@type='videorecording')				
+	<xsl:template match="mods:identifier[@type='IID' or 
+						( not(@type) and not(@type='doi') 
+						and not(@type='hdl') and not(@type='isbn')
+						and not(@type='isrc') and not(@type='ismn')
+						and not(@type='issn') and not(@type='issn-l')
+						and not(@type='issue number') and not(@type='lccn')
+						and not(@type='matrix number') and not(@type='music publisher')
+						and not(@type='music plate') and not(@type='sici')
+						and not(@type='stocknumber') and not(@type='')
+						and not(@type='uri') and not(@type='upc')
+						and not(@type='videorecording')
+						)
 						]">
 		<xsl:call-template name="datafield">
 			<xsl:with-param name="tag">035</xsl:with-param>
@@ -1880,10 +1882,13 @@
 	</xsl:template>
 	
 	<!--v3 location/url -->
+	<!-- FLVC edit: added proper indicators -->
 	<xsl:template match="mods:location[mods:url]">
 		<xsl:for-each select="mods:url">
 		<xsl:call-template name="datafield">
 			<xsl:with-param name="tag">856</xsl:with-param>
+			<xsl:with-param name="ind1">4</xsl:with-param>
+			<xsl:with-param name="ind2">0</xsl:with-param>
 			<xsl:with-param name="subfields">
 				<marc:subfield code="u">
 					<xsl:value-of select="."/>
@@ -1903,6 +1908,7 @@
 			</xsl:call-template>
 		</xsl:for-each>
 	</xsl:template>
+	
 	<xsl:template match="mods:identifier[@type='upc']">
 		<xsl:call-template name="datafield">
 			<xsl:with-param name="tag">024</xsl:with-param>
@@ -2075,11 +2081,13 @@
 		</xsl:call-template>
 	</xsl:template>
 
+	<!-- FLVC edit: 440 is obsolete, mapping now to 830 -->
 	<xsl:template match="mods:relatedItem[@type='series']">
 		<!-- v3 build series type -->
 			<xsl:for-each select="mods:titleInfo">
 				<xsl:call-template name="datafield">
-					<xsl:with-param name="tag">440</xsl:with-param>					
+					<!-- <xsl:with-param name="tag">440</xsl:with-param> -->					
+					<xsl:with-param name="tag">830</xsl:with-param>					
 					<xsl:with-param name="subfields">
 						<xsl:call-template name="titleInfo"/>
 					</xsl:with-param>
