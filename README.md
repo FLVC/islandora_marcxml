@@ -1,3 +1,13 @@
+BUILD STATUS
+------------
+Current build status:
+[![Build Status](https://travis-ci.org/Islandora/islandora_marcxml.png?branch=7.x)](https://travis-ci.org/Islandora/islandora_marcxml)
+
+CI Server:
+http://jenkins.discoverygarden.ca
+
+ISLANDORA MARCXML
+==================
 
 CONTENTS OF THIS FILE
 ---------------------
