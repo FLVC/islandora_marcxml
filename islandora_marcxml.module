@@ -61,7 +61,7 @@ function islandora_marcxml_xml_download($output) {
  *   otherwise.
  */
 function islandora_marcxml_access_callback($object) {
-  return is_object($object) && isset($object['MODS']) && islandora_datastream_access(FEDORA_VIEW_OBJECTS, $object['MODS']);
+  return is_object($object) && isset($object['MODS']) && islandora_datastream_access(ISLANDORA_VIEW_OBJECTS, $object['MODS']);
 }
 
 /**
