@@ -489,8 +489,9 @@
 
 		<xsl:call-template name="datafield">
 	  	    <xsl:with-param name="tag">245</xsl:with-param>
-                    <xsl:with-param name="ind1" select="number(boolean(//mods:name/mods:role/mods:roleTerm[@type='text']='creator' or //mods:name/mods:role/mods:roleTerm[@type='code']='cre' or //mods:name[@usage='primary']))" />
                     
+                    <xsl:with-param name="ind1" select="number(boolean((//mods:name/mods:role/mods:roleTerm[@type='text']='creator' or //mods:name/mods:role/mods:roleTerm[@type='code']='cre' or //mods:name[@usage='primary']) and //mods:name[@type]))" />
+                   
 		   <xsl:with-param name="ind2" select="string-length(mods:nonSort)"/>
 		   <xsl:with-param name="subfields">
 		         <xsl:call-template name="titleInfo"/>
