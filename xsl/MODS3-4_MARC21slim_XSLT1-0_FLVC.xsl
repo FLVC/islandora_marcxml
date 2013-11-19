@@ -6,7 +6,15 @@
 	exclude-result-prefixes="mods xlink" 
 	xmlns:marc="http://www.loc.gov/MARC21/slim">
 <!-- 
-	FLVC edits for Islandora MODS-to-MARC use
+	
+        Priscilla Caplan 11/13
+        Fixed 650 & 651 2nd indicator mapping, and supply $2 when ind2 = "7"
+	Fixed identifier logic
+        Fixed 245 ind1 to be "0" when when no 1xx, "1" otherwise
+        Fixed mapping language to 008 - checks length and catches "eng"
+	
+
+        FLVC edits for Islandora MODS-to-MARC use
 	Caitlin Nelson April 2013
 	
 	Upgraded to MODS 3.4 XSLT 1.0 - 2012/05/11
@@ -453,9 +461,10 @@
 				<!-- 35-37 -->	
 				<xsl:choose>
 				<!-- v3 language -->
-					<xsl:when test="mods:language/mods:languageTerm[@authority='iso639-2b']">
+					<xsl:when test="string-length(mods:language/mods:languageTerm[@authority='iso639-2b'])=3">
 						<xsl:value-of select="mods:language/mods:languageTerm[@authority='iso639-2b']"/>
 					</xsl:when>
+                                        <xsl:when test="mods:language/mods:languageTerm = 'english' or mods:language/mods:languageTerm = 'eng'"><xsl:text>eng</xsl:text></xsl:when>
 					<xsl:otherwise>
 						<xsl:text>|||</xsl:text>
 					</xsl:otherwise>
@@ -474,19 +483,21 @@
 
 	<xsl:template match="*"/>
 
+       
 <!-- Title Info elements -->
 	<xsl:template match="mods:titleInfo[not(ancestor-or-self::mods:subject)][not(@type)][1]">
+
 		<xsl:call-template name="datafield">
-			<xsl:with-param name="tag">245</xsl:with-param>
-			<xsl:with-param name="ind1">1</xsl:with-param>
-			<xsl:with-param name="ind2" select="string-length(mods:nonSort)"/>
-			<xsl:with-param name="subfields">
-				<xsl:call-template name="titleInfo"/>
-				<!-- 1/04 fix -->
-				<xsl:call-template name="stmtOfResponsibility"/>
-				<xsl:call-template name="form"/>
-			</xsl:with-param>
-		</xsl:call-template>
+	  	    <xsl:with-param name="tag">245</xsl:with-param>
+                    <xsl:with-param name="ind1" select="number(boolean(//mods:name/mods:role/mods:roleTerm[@type='text']='creator' or //mods:name/mods:role/mods:roleTerm[@type='code']='cre' or //mods:name[@usage='primary']))" />
+                    
+		   <xsl:with-param name="ind2" select="string-length(mods:nonSort)"/>
+		   <xsl:with-param name="subfields">
+		         <xsl:call-template name="titleInfo"/>
+	                 <xsl:call-template name="stmtOfResponsibility"/>
+			 <xsl:call-template name="form"/>
+		   </xsl:with-param>
+	       </xsl:call-template>
 	</xsl:template>
 	
 	<xsl:template match="mods:titleInfo[@type='abbreviated']">
@@ -1263,15 +1274,24 @@
 		<xsl:call-template name="datafield">
 			<xsl:with-param name="tag">650</xsl:with-param>
 			<xsl:with-param name="ind1">1</xsl:with-param>
+                        <xsl:with-param name="ind2"><xsl:call-template name="authorityInd"/></xsl:with-param>
 			<xsl:with-param name="subfields">
 				<marc:subfield code="a">
 					<xsl:value-of select="*[1]"/>
 				</marc:subfield>
 				<xsl:apply-templates select="*[position()>1]"/>
+                                <xsl:if test="@authority" >
+                                   <xsl:if test="@authority!='lcsh' and @authority != 'lcshac' and @authority != 'mesh' and @authority != 'csh' and @authority !='nal' and @authority != 'rvm'">
+                                       <marc:subfield code="2">
+                                            <xsl:value-of select="@authority" />
+                                       </marc:subfield>
+                                   </xsl:if>	
+                                </xsl:if>
 			</xsl:with-param>
 		</xsl:call-template>	
 	</xsl:template>
-	<xsl:template match="mods:subject[local-name(*[1])='titleInfo']">		
+	
+        <xsl:template match="mods:subject[local-name(*[1])='titleInfo']">		
 		<xsl:call-template name="datafield">
 			<xsl:with-param name="tag">630</xsl:with-param>
 			<xsl:with-param name="ind1"><xsl:value-of select="string-length(mods:titleInfo/mods:nonSort)"/></xsl:with-param>
@@ -1383,6 +1403,13 @@
 					<xsl:value-of select="*[1]"/>
 				</marc:subfield>
 				<xsl:apply-templates select="*[position()>1]"/>
+                                <xsl:if test="@authority" >
+                                   <xsl:if test="@authority!='lcsh' and @authority != 'lcshac' and @authority != 'mesh' and @authority != 'csh' and @authority !='nal' and @authority != 'rvm'">
+                                       <marc:subfield code="2">
+                                            <xsl:value-of select="@authority" />
+                                       </marc:subfield>
+                                   </xsl:if>	
+                                </xsl:if>
 			</xsl:with-param>
 		</xsl:call-template>	
 	</xsl:template>
@@ -1653,8 +1680,9 @@
 <!-- Identifiers -->	
 	
 	<!-- FLVC edit to handle IID type identifiers, no-@type identifiers, and anything else not covered by a template below -->
-	<xsl:template match="mods:identifier[@type='IID' or 
-						( not(@type) and not(@type='doi') 
+	<xsl:template match="mods:identifier[@type='IID' or not(@type) or
+						(
+                                                not(@type='doi') 
 						and not(@type='hdl') and not(@type='isbn')
 						and not(@type='isrc') and not(@type='ismn')
 						and not(@type='issn') and not(@type='issn-l')
@@ -1950,7 +1978,7 @@
 			<xsl:when test="@authority='nal'">5</xsl:when>
 			<xsl:when test="@authority='rvm'">6</xsl:when>
 			<xsl:when test="@authority">7</xsl:when>
-			<xsl:otherwise><xsl:text> </xsl:text></xsl:otherwise><!-- v3 blank ind2 fix-->
+			<xsl:otherwise>4</xsl:otherwise>   <!-- fix for blank ind (pc 11-13-13) -->
 		</xsl:choose>
 	</xsl:template>
 	
