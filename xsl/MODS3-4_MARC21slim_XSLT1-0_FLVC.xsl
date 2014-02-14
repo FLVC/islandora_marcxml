@@ -8,6 +8,20 @@
 	xmlns:marc="http://www.loc.gov/MARC21/slim">
 <!-- 
 	
+	Priscilla Caplan 2/14/14
+	Total reorganization because of name handling complexity
+        Punctuated 260 and all main and added entry fields
+        Map typeOfResource to 998 77 $b so will be Mango format facet
+
+
+	Priscilla Caplan 1/6/14
+	Fixed to not map MODS issuance to MARC 250
+	Add comma between namePart, date and role.
+        Add $l to 534 if relatedItem[@type='original']/location/url
+        Change mapping of <genre> with no authority from 655 to 380
+        Put yid in 008 if languageTerm = "Yiddish"
+        Add $e to 720
+      
         Priscilla Caplan 12/4/13
         Fixed location/url not processed when location/physicalLocation present
         Changed format of 887 to conform to spec
@@ -36,7 +50,7 @@
 	<xsl:output method="xml" indent="yes" encoding="UTF-8"/>
 
 	<xsl:template match="/">
-			<xsl:apply-templates/>
+               <xsl:apply-templates/>
 	</xsl:template>
 
 	<xsl:template match="mods:modsCollection">
@@ -493,13 +507,16 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
 					</xsl:when>
 					<xsl:otherwise>|</xsl:otherwise>
 				</xsl:choose>
+				
 				<!-- 35-37 -->	
+                                <xsl:variable name="lang" select="translate(mods:language/mods:languageTerm,'ABCDEFGHIJKLMNOPQRSTUVWXYZ',  'abcdefghijklmnopqrstuvwxyz')" />
+                                
 				<xsl:choose>
-				<!-- v3 language -->
 					<xsl:when test="string-length(mods:language/mods:languageTerm[@authority='iso639-2b'])=3">
 						<xsl:value-of select="mods:language/mods:languageTerm[@authority='iso639-2b']"/>
 					</xsl:when>
-                                        <xsl:when test="mods:language/mods:languageTerm = 'english' or mods:language/mods:languageTerm = 'eng'"><xsl:text>eng</xsl:text></xsl:when>
+                                        <xsl:when test="'english'=$lang or 'eng'=$lang"><xsl:text>eng</xsl:text></xsl:when>
+                                        <xsl:when test="'yiddish'=$lang or 'yid'=$lang"><xsl:text>yid</xsl:text></xsl:when>
 					<xsl:otherwise>
 						<xsl:text>|||</xsl:text>
 					</xsl:otherwise>
@@ -1009,47 +1026,201 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
 	
 <!-- Name elements -->
 	<xsl:template match="mods:name">
+             <xsl:variable name="tag">
+             <xsl:choose>
+                  <xsl:when test="current()[not(@type)]" >
+                       <xsl:text>720</xsl:text>
+                  </xsl:when>
+                  <xsl:when test="current()[@type='personal']" >
+                       <xsl:choose>
+                           <xsl:when test="substring(mods:role/mods:roleTerm,1,3)='cre'" >
+                                 <xsl:text>100</xsl:text>
+                           </xsl:when>
+                           <xsl:when test="current()[@usage]" >
+                                 <xsl:text>100</xsl:text>
+                           </xsl:when>
+                           <xsl:when test="//mods:typeOfResource='still image' and substring(mods:role/mods:roleTerm,1,2) ='ph'" >
+                                 <xsl:text>100</xsl:text>
+                           </xsl:when>
+                           <xsl:otherwise>
+                                 <xsl:text>700</xsl:text>
+                           </xsl:otherwise>
+                       </xsl:choose>
+                   </xsl:when>
+                   <xsl:when test="current()[@type='corporate']" >
+                       <xsl:choose>
+                           <xsl:when test="substring(mods:role/mods:roleTerm,1,3)='cre'" >
+                                 <xsl:text>110</xsl:text>
+                           </xsl:when>
+                           <xsl:when test="current()[@usage]" >
+                                 <xsl:text>110</xsl:text>
+                           </xsl:when>
+                           <xsl:when test="//mods:typeOfResource='still image' and substring(mods:role/mods:roleTerm,1,2) ='ph'" >
+                                 <xsl:text>110</xsl:text>
+                           </xsl:when>
+                           <xsl:otherwise>
+                                 <xsl:text>710</xsl:text>
+                           </xsl:otherwise>
+                       </xsl:choose>
+                   </xsl:when>
+                   <xsl:otherwise>    <!-- has to be conference  -->
+                        <xsl:choose>
+                           <xsl:when test="substring(mods:role/mods:roleTerm,1,3)='cre'" >
+                                 <xsl:text>111</xsl:text>
+                           </xsl:when>
+                           <xsl:when test="current()[@usage]" >
+                                 <xsl:text>111</xsl:text>
+                           </xsl:when>
+                           <xsl:otherwise>
+                                 <xsl:text>711</xsl:text>
+                           </xsl:otherwise>
+                        </xsl:choose>
+                    </xsl:otherwise>
+              </xsl:choose>
+          </xsl:variable>     
+         
+        <xsl:if test="$tag='720'"> 
 		<xsl:call-template name="datafield">
 			<xsl:with-param name="tag">720</xsl:with-param>
+                        
 			<xsl:with-param name="subfields">
-				<marc:subfield code="a">
-					<xsl:value-of select="mods:namePart"/>
-				</marc:subfield>
-			</xsl:with-param>
-		</xsl:call-template>	
-	</xsl:template>
-	<!-- v3 role-->
-	<!-- FLVC edit: MARC-to-MODS will 100, 110, or 111 will map with @usage="primary" so we look for that in the round-trip back to tag="1XX" -->
-	<xsl:template match="mods:name[@type='personal'][mods:role/mods:roleTerm[@type='text']='creator'] | mods:name[@type='personal' and @usage='primary']">
+                                <marc:subfield code="a">   <!-- use punctuation for personal since we don't know. -->
+                                       <xsl:for-each select="mods:namePart" >
+                                               <xsl:value-of select="." />
+                                               <xsl:choose>
+                                                    <xsl:when test="following-sibling::mods:namePart" ><xsl:text>, </xsl:text></xsl:when>
+					            <xsl:when test="../mods:role/mods:roleTerm[@type='code'] or ../mods:role/mods:roleTerm='cre' or ../mods:role/mods:roleTerm='pht'" />
+                                                    <xsl:otherwise><xsl:text>,</xsl:text></xsl:otherwise>     
+                                               </xsl:choose>             
+                                        </xsl:for-each>
+				 </marc:subfield>
+                                 <xsl:choose>
+                                        <xsl:when test="mods:role/mods:roleTerm[@type='text']">
+                                            <marc:subfield code="e">
+                                                 <xsl:value-of select="mods:role/mods:roleTerm[@type='text']" />
+                                            </marc:subfield>
+                                        </xsl:when>
+                                        <xsl:when test="mods:role/mods:roleTerm[@type='code']">
+                                            <marc:subfield code="4">
+                                                 <xsl:value-of select="mods:role/mods:roleTerm[@type='code']" />
+                                            </marc:subfield>
+                                        </xsl:when>
+                                        <xsl:when test="mods:role/mods:roleTerm[not(@type)]">
+                                            <xsl:choose>
+                                                <xsl:when test="mods:role/mods:roleTerm = 'cre' or mods:role/mods:roleTerm = 'pht'">
+                                                     <marc:subfield code="4">
+                                                     <xsl:value-of select="mods:role/mods:roleTerm" />
+                                            </marc:subfield>
+</xsl:when>
+                                                <xsl:otherwise>
+                                                     
+                                            <marc:subfield code="e">
+                                                 <xsl:value-of select="mods:role/mods:roleTerm" />
+                                            </marc:subfield>
+                                             </xsl:otherwise>
+                                             </xsl:choose>
+                                       </xsl:when>
+                                        <xsl:when test="../mods:name[@usage]">
+                                            <marc:subfield code="e">
+                                                 <xsl:text>creator</xsl:text>
+                                            </marc:subfield>
+                                        </xsl:when>
+                                        <xsl:otherwise>
+                                            <marc:subfield code="e">
+                                                 <xsl:text>contributor</xsl:text>
+                                            </marc:subfield>
+                                        </xsl:otherwise>
+                                </xsl:choose>
+		</xsl:with-param>
+		</xsl:call-template>
+         </xsl:if>	
+
+	<xsl:if test="$tag='100' or $tag='700'">
 		<xsl:call-template name="datafield">
-			<xsl:with-param name="tag">100</xsl:with-param>
+			<xsl:with-param name="tag"><xsl:value-of select="$tag"/></xsl:with-param>
 			<xsl:with-param name="ind1">1</xsl:with-param>
 			<xsl:with-param name="subfields">
+
+                                
 				<marc:subfield code="a">
-					<xsl:value-of select="mods:namePart"/>
+                                    <xsl:for-each select="mods:namePart[not(@type) or @type='given' or @type='family']" >
+					<xsl:value-of select="."/>
+                                        <xsl:choose>
+                                             <xsl:when test="position() != last ()"> <xsl:text>, </xsl:text></xsl:when>
+                                             <xsl:otherwise>  <!-- last namePart for subfield a -->
+                                                    <xsl:choose>
+                                                           <xsl:when test="not(following-sibling::*)" />  <!-- no more subfields -->
+                                                           <xsl:when test="following-sibling::*[1][self::mods:role] and (substring(../mods:role/mods:roleTerm,1,3)='cre' 
+ or ../mods:role/mods:roleTerm[@type='code'] or ../mods:role/mods:roleTerm='pht')" />
+                                                           <xsl:otherwise> <xsl:text>,</xsl:text></xsl:otherwise>
+                                                    </xsl:choose>
+                                              </xsl:otherwise>
+                                         </xsl:choose>
+                                     </xsl:for-each>
 				</marc:subfield>
-				<!-- v3 termsOfAddress -->
-				<xsl:for-each select="mods:namePart[@type='termsOfAddress']">
+			
+				<xsl:for-each select="mods:namePart[@type='termsOfAddress']" >  
 					<marc:subfield code="c">
-						<xsl:value-of select="."/>
+						<xsl:value-of select="." />
+                                                <xsl:choose>
+                                                           <xsl:when test="../mods:namePart[@type='date']"><xsl:text>,</xsl:text></xsl:when>
+                                                           <xsl:when test="../mods:role">
+                                                                <xsl:choose>
+                                                                    <xsl:when test="../mods:role/mods:roleTerm[@type='code']" />
+                                                                    <xsl:when test="substring(../mods:role/mods:roleTerm,1,3)='cre'" />
+                                                                    <xsl:when test="../mods:role/mods:roleTerm='pht'" />
+                                                                    <xsl:otherwise><xsl:text>,</xsl:text></xsl:otherwise>
+                                                                </xsl:choose>
+                                                           </xsl:when>
+                                                </xsl:choose>                                     
 					</marc:subfield>
-				</xsl:for-each>
-				<xsl:for-each select="mods:namePart[@type='date']">
+                                </xsl:for-each>
+
+                                <xsl:for-each select="mods:namePart[@type='date']" >  
 					<marc:subfield code="d">
-						<xsl:value-of select="."/>
+						<xsl:value-of select="." />
+                                                <xsl:if test="../mods:role">
+                                                        <xsl:choose>
+                                                           <xsl:when test="../mods:role/mods:roleTerm='pht'" />
+                                                           <xsl:when test="substring(../mods:role/mods:roleTerm,1,3)='cre'" /> 
+                                                           <xsl:when test="../mods:role/mods:roleTerm[@type='code']" />
+                                                           <xsl:otherwise> <xsl:text>,</xsl:text></xsl:otherwise>
+                                                        </xsl:choose>
+                                                </xsl:if>                                     
 					</marc:subfield>
-				</xsl:for-each>
-				<!-- v3 role -->
-				<xsl:for-each select="mods:role/mods:roleTerm[@type='text']">
-					<marc:subfield code="e">
-						<xsl:value-of select="."/>
-					</marc:subfield>
-				</xsl:for-each>
-				<xsl:for-each select="mods:role/mods:roleTerm[@type='code']">
-					<marc:subfield code="4">
-						<xsl:value-of select="."/>
-					</marc:subfield>
-				</xsl:for-each>
+                                </xsl:for-each>
+     
+
+                                <xsl:choose>
+				    <xsl:when test="mods:role/mods:roleTerm[@type='text']"> 
+                                        <xsl:if test="not(mods:role/mods:roleTerm='creator')">
+                                               <marc:subfield code="e">
+                                                      <xsl:value-of select="mods:role/mods:roleTerm" />
+                                               </marc:subfield>
+                                        </xsl:if>
+                                    </xsl:when>
+                                    <xsl:when test="mods:role/mods:roleTerm[not(@type)]" >
+                                         <xsl:choose>
+                                              <xsl:when test="mods:role/mods:roleTerm='pht'">
+                                                   <marc:subfield code="4">
+                                                       <xsl:text>pht</xsl:text>
+                                                   </marc:subfield>
+                                              </xsl:when>
+                                              <xsl:when test="substring(mods:role/mods:roleTerm,1,3)='cre'" />
+                                              <xsl:otherwise>
+                                                   <marc:subfield code="e">
+                                                        <xsl:value-of select="mods:role/mods:roleTerm" />
+                                                   </marc:subfield>
+                                              </xsl:otherwise>
+                                        </xsl:choose>
+                                   </xsl:when>
+                                   <xsl:when test="mods:role/mods:roleTerm[@type='code']" >
+                                        <marc:subfield code="4">
+                                               <xsl:value-of select="mods:role/mods:roleTerm" />
+                                        </marc:subfield>
+                                   </xsl:when>
+                                </xsl:choose>
+
 				<xsl:for-each select="mods:affiliation">
 					<marc:subfield code="u">
 						<xsl:value-of select="."/>
@@ -1062,32 +1233,87 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
 				</xsl:for-each>
 			</xsl:with-param>
 		</xsl:call-template>	
-	</xsl:template>
-	<!-- v3 role -->
-	<xsl:template match="mods:name[@type='corporate'][mods:role/mods:roleTerm[@type='text']='creator'] | mods:name[@type='corporate' and @usage='primary']">
+	</xsl:if>
+	
+	<xsl:if test="$tag='110' or $tag='710'">
 		<xsl:call-template name="datafield">
-			<xsl:with-param name="tag">110</xsl:with-param>
+                        <xsl:with-param name="tag"><xsl:value-of select="$tag"/></xsl:with-param>
 			<xsl:with-param name="ind1">2</xsl:with-param>
 			<xsl:with-param name="subfields">
 				<marc:subfield code="a">
-					<xsl:value-of select="mods:namePart[1]"/>
+                 	                <xsl:value-of select="mods:namePart[1]"/>
+                                        <xsl:choose>
+                                                <xsl:when test="not(mods:namePart[2]) and mods:role/mods:roleTerm='pht'">
+                                                     <xsl:text>.</xsl:text>
+                                                </xsl:when>
+                                                <xsl:when test="not(mods:namePart[2]) and mods:role/mods:roleTerm[not(@type='code')] and not(substring(mods:role/mods:roleTerm,1,3) ='cre')" >
+                                                     <xsl:text>,</xsl:text>
+                                                </xsl:when> 
+                                                <xsl:otherwise>
+                                                     <xsl:text>.</xsl:text>
+                                                </xsl:otherwise>
+                                        </xsl:choose>               
 				</marc:subfield>
 				<xsl:for-each select="mods:namePart[position()>1]">
 					<marc:subfield code="b">
 						<xsl:value-of select="."/>
+                                                <xsl:choose>   
+                                                        <xsl:when test="following-sibling::node()">
+                                                              <xsl:text>.</xsl:text>
+                                                        </xsl:when>
+                                                        <xsl:when test="following-sibling::*[1][self::mods:namePart]">
+                                                              <xsl:text>.</xsl:text>
+                                                        </xsl:when>
+                                                        <xsl:when test="following-sibling::*[1][self::mods:role]">
+                                                               <xsl:choose>
+                                                                   <xsl:when test="../mods:role/mods:roleTerm[@type='code']">
+                                                                        <xsl:text>.</xsl:text>
+                                                                   </xsl:when>
+                                                                   <xsl:when test="substring(../mods:role/mods:roleTerm,1,3)='cre'">
+                                                                         <xsl:text>.</xsl:text>
+                                                                   </xsl:when>
+                                                                   <xsl:when test="../mods:role/mods:roleTerm='pht'">                                                                          
+                                                                         <xsl:text>.</xsl:text>
+                                                                   </xsl:when>
+                                                                   <xsl:otherwise>
+                                                                         <xsl:text>,</xsl:text>
+                                                                   </xsl:otherwise>
+                                                               </xsl:choose> 
+                                                         </xsl:when>  
+                                                         <xsl:otherwise><xsl:text>,</xsl:text></xsl:otherwise>
+                                                </xsl:choose>                                      
 					</marc:subfield>
 				</xsl:for-each>
-				<!-- v3 role -->
-				<xsl:for-each select="mods:role/mods:roleTerm[@type='text']">
-					<marc:subfield code="e">
-						<xsl:value-of select="."/>
-					</marc:subfield>
-				</xsl:for-each>
-				<xsl:for-each select="mods:role/mods:roleTerm[@type='code']">
-					<marc:subfield code="4">
-						<xsl:value-of select="."/>
-					</marc:subfield>
-				</xsl:for-each>
+				
+                                <xsl:if test="mods:role/mods:roleTerm[@type='text']" >
+                                        <xsl:if test="not(mods:role/mods:roleTerm = 'creator')" >
+                                	            <marc:subfield code="e">
+                                                        <xsl:value-of select="mods:role/mods:roleTerm" />
+                                                </marc:subfield>
+                                        </xsl:if>
+                                </xsl:if>
+                                <xsl:if test="mods:role/mods:roleTerm[@type='code']" >
+                                        <marc:subfield code="4">
+                                                <xsl:value-of select="mods:role/mods:roleTerm" />
+                                        </marc:subfield>
+                                </xsl:if>
+                                <xsl:if test="mods:role/mods:roleTerm[not(@type)]">
+                                        <xsl:choose>
+                                                 <xsl:when test="mods:role/mods:roleTerm = 'pht'" >
+                                                       <marc:subfield code="4">
+                                                             <xsl:value-of select="mods:role/mods:roleTerm" />
+                                                       </marc:subfield>
+                                                 </xsl:when>
+                                                 <xsl:otherwise>
+                                                 	   <xsl:if test="not(substring(mods:role/mods:roleTerm,1,3) = 'cre')" >
+                                                              <marc:subfield code="e">
+                                                                      <xsl:value-of select="mods:role/mods:roleTerm" />
+                                                               </marc:subfield>
+                                                        </xsl:if>
+                                                 </xsl:otherwise>
+                                         </xsl:choose>
+                                </xsl:if>
+                                  
 				<xsl:for-each select="mods:description">
 					<marc:subfield code="g">
 						<xsl:value-of select="."/>
@@ -1095,17 +1321,49 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
 				</xsl:for-each>
 			</xsl:with-param>
 		</xsl:call-template>	
-	</xsl:template>
-	<!-- v3 role -->
-	<xsl:template match="mods:name[@type='conference'][mods:role/mods:roleTerm[@type='text']='creator'] | mods:name[@type='conference' and @usage='primary']">
+	</xsl:if>
+	
+	<xsl:if test="$tag='111' or $tag='711'">  
+        <!-- meetings are easy because should all be preformatted in a single namePart  -->
 		<xsl:call-template name="datafield">
-			<xsl:with-param name="tag">111</xsl:with-param>
+			<xsl:with-param name="tag"><xsl:value-of select="$tag" /></xsl:with-param>
 			<xsl:with-param name="ind1">2</xsl:with-param>
 			<xsl:with-param name="subfields">
 				<marc:subfield code="a">
 					<xsl:value-of select="mods:namePart[1]"/>
+                                        <xsl:if test="mods:role/mods:roleTerm" >
+                                             <xsl:choose>
+                                                <xsl:when test="mods:role/mods:roleTerm[@type='code']" />
+                                                <xsl:when test="substring(mods:role/mods:roleTerm,1,3)='cre'" />
+                                                <xsl:when test="substring(mods:role/mods:roleTerm,1,3)='pht'" />
+                                                <xsl:otherwise>
+                                                     <xsl:text>,</xsl:text>
+                                                </xsl:otherwise>
+                                             </xsl:choose>
+                                        </xsl:if>
 				</marc:subfield>
-				<!-- v3 role -->
+				
+				<xsl:for-each select="mods:role/mods:roleTerm[@type='text'][. != 'creator']">
+                                  	<marc:subfield code="e">
+						<xsl:value-of select="."/>
+					</marc:subfield>
+				</xsl:for-each>
+
+                                <xsl:for-each select="mods:role/mods:roleTerm[not(@type)]">
+                                        <xsl:choose>
+                                             <xsl:when test="mods:role/mods:roleTerm='cre' or mods:role/mods:roleTerm='pht'" >
+                                                <marc:subfield code="4">
+                                                       <xsl:value-of select="."/>
+                                                </marc:subfield>
+                                             </xsl:when>
+                                             <xsl:otherwise>
+					         <marc:subfield code="e">
+                                                       <xsl:value-of select="."/>
+                                                 </marc:subfield>
+                                             </xsl:otherwise>
+                                        </xsl:choose>
+				</xsl:for-each>
+
 				<xsl:for-each select="mods:role/mods:roleTerm[@type='code']">
 					<marc:subfield code="4">
 						<xsl:value-of select="."/>
@@ -1113,95 +1371,11 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
 				</xsl:for-each>
 			</xsl:with-param>
 		</xsl:call-template>	
-	</xsl:template>
-	<!-- v3 role -->
-	<xsl:template match="mods:name[@type='personal' and not(@usage='primary')][mods:role/mods:roleTerm[@type='text']!='creator' or not(mods:role)]">
-		<xsl:call-template name="datafield">
-			<xsl:with-param name="tag">700</xsl:with-param>
-			<xsl:with-param name="ind1">1</xsl:with-param>
-			<xsl:with-param name="subfields">
-				<marc:subfield code="a">
-					<xsl:value-of select="mods:namePart"/>
-				</marc:subfield>
-				<!-- v3 termsofAddress -->
-				<xsl:for-each select="mods:namePart[@type='termsOfAddress']">
-					<marc:subfield code="c">
-						<xsl:value-of select="."/>
-					</marc:subfield>
-				</xsl:for-each>
-				<xsl:for-each select="mods:namePart[@type='date']">
-					<marc:subfield code="d">
-						<xsl:value-of select="."/>
-					</marc:subfield>
-				</xsl:for-each>
-				<!-- v3 role -->
-				<xsl:for-each select="mods:role/mods:roleTerm[@type='text']">
-					<marc:subfield code="e">
-						<xsl:value-of select="."/>
-					</marc:subfield>
-				</xsl:for-each>
-				<xsl:for-each select="mods:role/mods:roleTerm[@type='code']">
-					<marc:subfield code="4">
-						<xsl:value-of select="."/>
-					</marc:subfield>
-				</xsl:for-each>
-				<xsl:for-each select="mods:affiliation">
-					<marc:subfield code="u">
-						<xsl:value-of select="."/>
-					</marc:subfield>
-				</xsl:for-each>
-			</xsl:with-param>
-		</xsl:call-template>	
-	</xsl:template>
-	<!-- v3 role -->
-	<xsl:template match="mods:name[@type='corporate' and not(@usage='primary')][mods:role/mods:roleTerm[@type='text']!='creator' or not(mods:role)]">
-		<xsl:call-template name="datafield">
-			<xsl:with-param name="tag">710</xsl:with-param>
-			<xsl:with-param name="ind1">2</xsl:with-param>
-			<xsl:with-param name="subfields">
-				<marc:subfield code="a">
-					<!-- 1/04 fix -->
-					<xsl:value-of select="mods:namePart[1]"/>
-				</marc:subfield>
-				<xsl:for-each select="mods:namePart[position()>1]">
-					<marc:subfield code="b"><xsl:value-of select="."/></marc:subfield>
-				</xsl:for-each><!-- v3 role -->
-				<xsl:for-each select="mods:role/mods:roleTerm[@type='text']">
-					<marc:subfield code="e">
-						<xsl:value-of select="."/>
-					</marc:subfield>
-				</xsl:for-each>
-				<xsl:for-each select="mods:role/mods:roleTerm[@type='code']">
-					<marc:subfield code="4">
-						<xsl:value-of select="."/>
-					</marc:subfield>
-				</xsl:for-each>
-				<xsl:for-each select="mods:description">
-					<marc:subfield code="g">
-						<xsl:value-of select="."/>
-					</marc:subfield>
-				</xsl:for-each>
-			</xsl:with-param>
-		</xsl:call-template>	
-	</xsl:template>
-	<!-- v3 role -->
-	<xsl:template match="mods:name[@type='conference' and not(@usage='primary')][mods:role/mods:roleTerm[@type='text']!='creator' or not(mods:role)]">
-		<xsl:call-template name="datafield">
-			<xsl:with-param name="tag">711</xsl:with-param>
-			<xsl:with-param name="ind1">2</xsl:with-param>
-			<xsl:with-param name="subfields">
-				<marc:subfield code="a">
-					<xsl:value-of select="mods:namePart[1]"/>
-				</marc:subfield>
-				<!-- v3 role -->
-				<xsl:for-each select="mods:role/mods:roleTerm[@type='code']">
-					<marc:subfield code="4">
-						<xsl:value-of select="."/>
-					</marc:subfield>
-				</xsl:for-each>
-			</xsl:with-param>
-		</xsl:call-template>	
-	</xsl:template>
+	</xsl:if>
+	
+	
+	
+     </xsl:template>
 	
 <!-- Genre elements -->
 	<xsl:template match="mods:genre[@authority!='marcgt' or not(@authority)][not(parent::mods:subject)]">
@@ -1209,7 +1383,7 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
 			<xsl:choose>
 				<xsl:when test="@authority = 'content' and @type='musical composition'">047</xsl:when>
 				<xsl:when test="@authority = 'content'">336</xsl:when>
-				<xsl:otherwise>655</xsl:otherwise>
+				<xsl:otherwise>380</xsl:otherwise>  <!-- FLVC change from 655 to 380 -->
 			</xsl:choose>
 		</xsl:variable>
 		<xsl:call-template name="datafield">
@@ -1316,16 +1490,7 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
 				</xsl:with-param>
 			</xsl:call-template>
 		</xsl:for-each>
-		<xsl:for-each select="mods:issuance">
-			<xsl:call-template name="datafield">
-				<xsl:with-param name="tag">250</xsl:with-param>
-				<xsl:with-param name="subfields">
-					<marc:subfield code='a'>
-						<xsl:value-of select="."/>
-					</marc:subfield>
-				</xsl:with-param>
-			</xsl:call-template>
-		</xsl:for-each>
+		
 		<xsl:if test="mods:place/mods:placeTerm[@type='text'] or mods:publisher or mods:dateIssued or mods:dateCreated">
 			<xsl:call-template name="datafield">
 				<xsl:with-param name="tag">
@@ -1346,14 +1511,26 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
 				</xsl:with-param>
 				<xsl:with-param name="subfields">
 					<!-- v3 place; changed to text  -->
-					<xsl:for-each select="mods:place/mods:placeTerm[@type='text']">
+					<xsl:for-each select="mods:place/mods:placeTerm[@type='text'] | mods:place/mods:placeTerm[not(@type)]">
 						<marc:subfield code='a'>
 							<xsl:value-of select="."/>
+                                                        <xsl:choose>
+                                                                <xsl:when test="../../mods:publisher" >
+                                                                     <xsl:text> :</xsl:text>
+                                                                </xsl:when>
+                                                                <xsl:when test="../../mods:dateIssued or ../../mods:dateCreated" >
+                                                                     <xsl:text>,</xsl:text>
+                                                                </xsl:when>
+                                                                <xsl:otherwise />
+                                                        </xsl:choose>
 						</marc:subfield>
 					</xsl:for-each>
 					<xsl:for-each select="mods:publisher">
 						<marc:subfield code='b'>
 							<xsl:value-of select="."/>
+                                                        <xsl:if test="../mods:dateIssued or ../mods:dateCreated" >
+                                                                <xsl:text>,</xsl:text>
+                                                        </xsl:if>
 						</marc:subfield>
 					</xsl:for-each>
 
@@ -2324,6 +2501,11 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
 						<xsl:value-of select="."/>
 					</marc:subfield>
 				</xsl:for-each>
+                                <xsl:for-each select="mods:location/mods:url">
+                                        <marc:subfield code="l">
+                                                <xsl:value-of select="."/>
+                                        </marc:subfield>
+                                </xsl:for-each>
 			</xsl:when>
 			<xsl:when test="@type!='original'">
 				<xsl:for-each select="mods:physicalDescription/mods:extent">
@@ -2495,37 +2677,28 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
                                 </xsl:if>     
 				</marc:subfield>
 			</xsl:with-param>
-		</xsl:call-template>		
-	</xsl:template>
-	
-	<!-- v3 not used?
-		<xsl:variable name="leader06">
-			<xsl:choose>
-				<xsl:when test="mods:typeOfResource='text'">
-					<xsl:choose>
-						<xsl:when test="@manuscript='yes'">t</xsl:when>
-						<xsl:otherwise>a</xsl:otherwise>
-					</xsl:choose>
-				</xsl:when>
-				<xsl:when test="mods:typeOfResource='cartographic'">
-					<xsl:choose>
-						<xsl:when test="@manuscript='yes'">f</xsl:when>
-						<xsl:otherwise>e</xsl:otherwise>
-					</xsl:choose>
-				</xsl:when>
-				<xsl:when test="mods:typeOfResource='notated music'">
-					<xsl:choose>
-						<xsl:when test="@manuscript='yes'">d</xsl:when>
-						<xsl:otherwise>c</xsl:otherwise>
-					</xsl:choose>
-				</xsl:when>
-				<xsl:when test="mods:typeOfResource='sound recording'">j</xsl:when>
-				<xsl:when test="mods:typeOfResource='still image'">k</xsl:when>
-				<xsl:when test="mods:typeOfResource='moving image'">g</xsl:when>
-				<xsl:when test="mods:typeOfResource='three dimensional object'">r</xsl:when>
-				<xsl:when test="mods:typeOfResource='software, multimedia'">m</xsl:when>
-				<xsl:when test="mods:typeOfResource='mixed material'">p</xsl:when>
-			</xsl:choose>
-		</xsl:variable>
--->
+		</xsl:call-template>	
+                
+		<xsl:if test="../mods:typeOfResource" >
+                     <xsl:choose>   
+                        <!-- don't need these three because they are provided by Mango facet mapping file --> 
+                        <xsl:when test="../mods:typeOfResource='sound recording' or ../mods:typeOfResource='mixed material' or ../mods:typeOfResource='software, multimedia'" />
+                        <xsl:otherwise>              
+                               <xsl:call-template name="datafield">
+                                     <xsl:with-param name="tag">998</xsl:with-param>
+                                     <xsl:with-param name="ind1">7</xsl:with-param>
+                                     <xsl:with-param name="ind2">7</xsl:with-param>
+                                     <xsl:with-param name="subfields">
+                                          <marc:subfield code="b">	
+	                                        <xsl:value-of select="../mods:typeOfResource" />
+	                                  </marc:subfield>
+                                     </xsl:with-param>
+                               </xsl:call-template>
+                      
+                        </xsl:otherwise>
+                    </xsl:choose>
+                </xsl:if>
+        </xsl:template>
+
+
 </xsl:stylesheet>
