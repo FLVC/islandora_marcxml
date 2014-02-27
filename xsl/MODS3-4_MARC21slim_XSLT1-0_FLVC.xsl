@@ -8,6 +8,9 @@
 	xmlns:marc="http://www.loc.gov/MARC21/slim">
 <!-- 
 	
+        Priscilla Caplan 2/25/14
+	Map sublocation to 852 $b
+
 	Priscilla Caplan 2/14/14
 	Total reorganization because of name handling complexity
         Punctuated 260 and all main and added entry fields
@@ -2613,14 +2616,20 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
 						<xsl:value-of select="."/>
 					</marc:subfield>
 					<!-- v3 displayLabel -->
-					<xsl:for-each select="@displayLabel">
+					<xsl:if test="@displayLabel">
 						<marc:subfield code="3">
-							<xsl:value-of select="."/>
+							<xsl:value-of select="@displayLabel"/>
 						</marc:subfield>
-					</xsl:for-each>
+					</xsl:if>
+                                        <xsl:for-each select="../mods:holdingSimple/mods:copyInformation/mods:subLocation">
+                                                <marc:subfield code="b">
+                                                        <xsl:value-of select="." />
+                                                </marc:subfield>
+                                        </xsl:for-each>
 				</xsl:with-param>
-			</xsl:call-template>		
-		</xsl:for-each>
+			</xsl:call-template>	
+                </xsl:for-each>	
+		
 	</xsl:template>
 	
 
