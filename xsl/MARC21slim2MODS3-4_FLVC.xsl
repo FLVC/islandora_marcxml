@@ -6,8 +6,17 @@
 	<xsl:output encoding="UTF-8" indent="yes" method="xml"/>
 	<xsl:strip-space elements="*"/>
 
+	<!--FLVC version continuation, Islandora project, updates by MDemers
+	
+		v8: (04.2014) added 69x local mappings and "sears" authority as Ind2=8
+		
+		-->
+	
 	<!-- FLVC version, written by Caitlin Nelson for the Islandora project
 		
+		v7: (8-02-2013) edited <dateIssued> fields for de-duping
+		v6: (7-26-2013) corrected 720 name creation
+		v5: (7-17-2013) updated relatedIdentifier to handle (parenthetical) @type
 		v4: (7-11-2013) updated PURL handling
 		v3. (6-27-2013) merged in LOC updated 1.86; updated marc:collection handling;
 		v2: (06/2013) removed the modsCollection wrapper option - all records will just have <mods> wrappers 
@@ -632,6 +641,20 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 		<!-- originInfo 250 and 260 -->
 
 		<originInfo>
+			
+			<xsl:variable name="dataField260c">
+				<xsl:call-template name="chopPunctuation">
+					<xsl:with-param name="chopString"
+						select="marc:datafield[@tag=260]/marc:subfield[@code='c']"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:variable name="controlField008-7-10"
+				select="normalize-space(substring($controlField008, 8, 4))"/>
+			<xsl:variable name="controlField008-11-14"
+				select="normalize-space(substring($controlField008, 12, 4))"/>
+			<xsl:variable name="controlField008-6"
+				select="normalize-space(substring($controlField008, 7, 1))"/>
+			
 			<xsl:call-template name="scriptCode"/>
 			<xsl:for-each
 				select="marc:datafield[(@tag=260 or @tag=250) and marc:subfield[@code='a' or code='b' or @code='c' or code='g']]">
@@ -733,6 +756,7 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 							</xsl:call-template>
 						</publisher>
 					</xsl:when>
+					
 					<xsl:when test="(@code='c')">
 						<xsl:if test="$leader6='d' or $leader6='f' or $leader6='p' or $leader6='t'">
 							<dateCreated>
@@ -741,9 +765,11 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 								</xsl:call-template>
 							</dateCreated>
 						</xsl:if>
-
+              
+			<!-- FLVC edit: there are so many statements to create a <dateIssued>... I added a check to see if the pub-date matches the 008 date to 
+				stop duplication of <dateIssued> field -->
 						<xsl:if
-							test="not($leader6='d' or $leader6='f' or $leader6='p' or $leader6='t')">
+							test="not($leader6='d' or $leader6='f' or $leader6='p' or $leader6='t') and ($dataField260c != $controlField008-7-10)">
 							<dateIssued>
 								<xsl:call-template name="chopPunctuation">
 									<xsl:with-param name="chopString" select="."/>
@@ -751,6 +777,7 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 							</dateIssued>
 						</xsl:if>
 					</xsl:when>
+					
 					<xsl:when test="@code='g'">
 						<xsl:if test="$leader6='d' or $leader6='f' or $leader6='p' or $leader6='t'">
 							<dateCreated>
@@ -766,18 +793,7 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 					</xsl:when>
 				</xsl:choose>
 			</xsl:for-each>
-			<xsl:variable name="dataField260c">
-				<xsl:call-template name="chopPunctuation">
-					<xsl:with-param name="chopString"
-						select="marc:datafield[@tag=260]/marc:subfield[@code='c']"/>
-				</xsl:call-template>
-			</xsl:variable>
-			<xsl:variable name="controlField008-7-10"
-				select="normalize-space(substring($controlField008, 8, 4))"/>
-			<xsl:variable name="controlField008-11-14"
-				select="normalize-space(substring($controlField008, 12, 4))"/>
-			<xsl:variable name="controlField008-6"
-				select="normalize-space(substring($controlField008, 7, 1))"/>
+			
 
 
 
@@ -837,17 +853,13 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 
 
 			<!-- tmee 1.77 008-06 dateIssued for value 's' -->
-			<!-- FLVC commented this out - I believe this does essentially the same thing as the second if statement above
-				and is creating a duplicate <dateIssued> field -->
-			<!-- <xsl:if test="$controlField008-6='s'">
+			<xsl:if test="$controlField008-6='s'">
 				<xsl:if test="$controlField008-7-10">
 					<dateIssued encoding="marc">
 						<xsl:value-of select="$controlField008-7-10"/>
 					</dateIssued>
 				</xsl:if>
-			</xsl:if> -->
-
-
+			</xsl:if>
 
 			<xsl:if test="$controlField008-6='t'">
 				<xsl:if test="$controlField008-11-14">
@@ -1949,6 +1961,27 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 			<xsl:call-template name="createSubGeoFrom662752"/>
 		</xsl:for-each>
 
+		<!--Added 690 - Map to 650. 4.15.2014 MD v8-->
+		<xsl:for-each select="marc:datafield[@tag=690]">
+			<xsl:call-template name="createSubTopFrom650"/>
+		</xsl:for-each>
+		<!--Added rest of 69X locals, just in case. 4.15.2014 MD v8-->
+		<xsl:for-each select="marc:datafield[@tag=691]">
+			<xsl:call-template name="createSubTopFrom651"/>
+		</xsl:for-each>	
+		<xsl:for-each select="marc:datafield[@tag=696]">
+			<xsl:call-template name="createSubTopFrom600"/>
+		</xsl:for-each>	
+		<xsl:for-each select="marc:datafield[@tag=697]">
+			<xsl:call-template name="createSubTopFrom610"/>
+		</xsl:for-each>
+		<xsl:for-each select="marc:datafield[@tag=698]">
+			<xsl:call-template name="createSubTopFrom611"/>
+		</xsl:for-each>
+		<xsl:for-each select="marc:datafield[@tag=699]">
+			<xsl:call-template name="createSubTopFrom630"/>
+		</xsl:for-each>
+		
 		<!-- createClassificationFrom 0XX-->
 		<xsl:for-each select="marc:datafield[@tag='050']">
 			<xsl:call-template name="createClassificationFrom050"/>
@@ -2704,7 +2737,7 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 				</recordIdentifier>
 			</xsl:for-each>
 
-			<recordOrigin>Converted from MARCXML to MODS v3.4 using MARC21slim2MODS3-4_FLVC.xsl (LOC rev 1.86 / 20130610) (FLVC v4)</recordOrigin>
+			<recordOrigin>Converted from MARCXML to MODS v3.4 using MARC21slim2MODS3-4_FLVC.xsl (LOC rev 1.86 / 20130610) (FLVC v7)</recordOrigin>
 
 			<xsl:for-each select="marc:datafield[@tag=040]/marc:subfield[@code='b']">
 				<languageOfCataloging>
@@ -2877,18 +2910,45 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 			</identifier>
 		</xsl:for-each>
 	</xsl:template>
+	
+	<!-- FLVC edit: now checks for @type in parens for related identifiers -->
 	<xsl:template name="relatedIdentifierLocal">
 		<xsl:for-each select="marc:subfield[@code='w']">
-			<identifier type="local">
-				<xsl:value-of select="."/>
-			</identifier>
+			<xsl:choose>
+				<xsl:when test="not(contains(text(), '(OCoLC)')) and starts-with(text(), '(')">
+					<identifier>
+						<xsl:attribute name="type">
+							<xsl:value-of select="substring-before(substring-after(., '('),')')" />
+						</xsl:attribute>
+						<xsl:value-of select="normalize-space(substring-after(., ')'))"/>
+					</identifier>
+				</xsl:when>
+				<xsl:otherwise>
+					<identifier>
+						<xsl:value-of select="."/>
+					</identifier>
+				</xsl:otherwise>
+			</xsl:choose>
 		</xsl:for-each>
 	</xsl:template>
+	
 	<xsl:template name="relatedIdentifier">
 		<xsl:for-each select="marc:subfield[@code='o']">
-			<identifier>
-				<xsl:value-of select="."/>
-			</identifier>
+			<xsl:choose>
+				<xsl:when test="not(contains(text(), '(OCoLC)')) and starts-with(text(), '(')">
+					<identifier>
+						<xsl:attribute name="type">
+							<xsl:value-of select="substring-before(substring-after(., '('),')')" />
+						</xsl:attribute>
+						<xsl:value-of select="normalize-space(substring-after(., ')'))"/>
+					</identifier>
+				</xsl:when>
+				<xsl:otherwise>
+					<identifier>
+						<xsl:value-of select="."/>
+					</identifier>
+				</xsl:otherwise>
+			</xsl:choose>
 		</xsl:for-each>
 	</xsl:template>
 
@@ -3118,7 +3178,7 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 	<xsl:template name="subjectAuthority">
 		<xsl:if test="@ind2!=4">
 			<xsl:if test="@ind2!=' '">
-				<xsl:if test="@ind2!=8">
+				
 					<xsl:if test="@ind2!=9">
 						<xsl:attribute name="authority">
 							<xsl:choose>
@@ -3132,10 +3192,12 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 								<xsl:when test="@ind2=7">
 									<xsl:value-of select="marc:subfield[@code='2']"/>
 								</xsl:when>
+								<!--Added sears. 4.15.14 MD v8-->
+								<xsl:when test="@ind2=8">sears</xsl:when>
 							</xsl:choose>
 						</xsl:attribute>
 					</xsl:if>
-				</xsl:if>
+				
 			</xsl:if>
 		</xsl:if>
 	</xsl:template>
@@ -4075,6 +4137,27 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 				<xsl:call-template name="createSubGeoFrom662752"/>
 			</xsl:when>
 
+			<!--Added 690 local subject - map to 650. 4.15.2014 MD v8-->
+			<xsl:when test="$sf06a='690'">
+				<xsl:call-template name="createSubTopFrom650"/>
+			</xsl:when>
+			<!--Added rest of 69X locals, just in case. 4.15.2014 MD v8-->
+			<xsl:when test="$sf06a='691'">
+				<xsl:call-template name="createSubTopFrom651"/>
+			</xsl:when>
+			<xsl:when test="$sf06a='696'">
+				<xsl:call-template name="createSubTopFrom600"/>
+			</xsl:when>
+			<xsl:when test="$sf06a='697'">
+				<xsl:call-template name="createSubTopFrom610"/>
+			</xsl:when>
+			<xsl:when test="$sf06a='698'">
+				<xsl:call-template name="createSubTopFrom611"/>
+			</xsl:when>
+			<xsl:when test="$sf06a='699'">
+				<xsl:call-template name="createSubTopFrom630"/>
+			</xsl:when>
+			
 			<!--  location  852 856 -->
 
 			<xsl:when test="$sf06a='852'">
@@ -4406,7 +4489,9 @@ Revision 1.02 - Added Log Comment  2003/03/24 19:37:42  ckeith
 	</xsl:template>
 
 	<xsl:template name="createNameFrom720">
-		<xsl:if test="marc:datafield[@tag='720'][not(marc:subfield[@code='t'])]">
+		<!-- FLVC correction: the original if test will fail because of xpath: the current node (from the for-each above) is already the 720 datafield -->
+		<!-- <xsl:if test="marc:datafield[@tag='720'][not(marc:subfield[@code='t'])]"> -->
+		<xsl:if test="not(marc:subfield[@code='t'])">
 			<name>
 				<xsl:if test="@ind1=1">
 					<xsl:attribute name="type">
