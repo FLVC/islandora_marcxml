@@ -8,7 +8,16 @@
 	xmlns:marc="http://www.loc.gov/MARC21/slim">
 <!-- 
 	
-    Mike Demers 5/1/2014
+    Mike Demers 1/15/15
+		520 ind1 changed from '2' to '3' for displayLabel='Abstract'.
+		note @type=original location now maps to 535.
+	
+	Mike Demers 1/13/15
+		Added test to 260 subfields c and g to display period if other punctuation is not present.
+		Added period to display at the end of 245 subfield h -"form".  
+		
+	
+	Mike Demers 5/1/2014
 		Name as subject subfield $a bug fixed. Selecting "." instead of namePart. 
 		Ind2 bug fixed. Added for-each to reference parent subject element.
 	
@@ -1587,6 +1596,7 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
 							<xsl:if test="../mods:dateIssued[@point='end']">
 								<xsl:text>-</xsl:text> <xsl:value-of select="../mods:dateIssued[@point='end']"/>
 							</xsl:if>
+							<xsl:if test="not(@qualifier='questionable') and not(@point='end')">.</xsl:if>
 						</marc:subfield>
 					</xsl:for-each>
 
@@ -1602,13 +1612,14 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
 							<xsl:if test="../mods:dateCreated[@point='end']">
 								<xsl:text>-</xsl:text><xsl:value-of select="../mods:dateCreated[@point='end']"/>
 							</xsl:if>
+							<xsl:if test="not(@qualifier='questionable') and not(@point='end')">.</xsl:if>
 						</marc:subfield>
 					</xsl:for-each>
                                            </xsl:when>
                                            <xsl:otherwise>
 					<xsl:for-each select="mods:dateCreated">
 						<marc:subfield code='g'>
-							<xsl:value-of select="."/>
+							<xsl:value-of select="."/><xsl:if test="not(@qualifier='questionable') and not(@point='end')">.</xsl:if>
 						</marc:subfield>
 					</xsl:for-each>
                                         </xsl:otherwise>
@@ -1770,7 +1781,7 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
 					<xsl:when test="@displayLabel='Subject'">0</xsl:when>
 					<xsl:when test="@displayLabel='Review'">1</xsl:when>
 					<xsl:when test="@displayLabel='Scope and content'">2</xsl:when>
-					<xsl:when test="@displayLabel='Abstract'">2</xsl:when>
+					<xsl:when test="@displayLabel='Abstract'">3</xsl:when>
 					<xsl:when test="@displayLabel='Content advice'">4</xsl:when>
 					<xsl:otherwise><xsl:text> </xsl:text></xsl:otherwise>
 				</xsl:choose>
@@ -1851,6 +1862,7 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
 				<xsl:choose>
 					<xsl:when test="@type='performers'">511</xsl:when>
 					<xsl:when test="@type='venue'">518</xsl:when>
+					<xsl:when test="@type='original location'">535</xsl:when>
 					<xsl:otherwise>500</xsl:otherwise>
 				</xsl:choose>
 			</xsl:with-param>
@@ -2303,7 +2315,7 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
 	<xsl:template name="form">
 		<xsl:if test="../mods:physicalDescription/mods:form[@authority='gmd']">
 			<marc:subfield code="h">
-				<xsl:value-of select="../mods:physicalDescription/mods:form[@authority='gmd']"/>
+				<xsl:value-of select="../mods:physicalDescription/mods:form[@authority='gmd']"/><xsl:text>.</xsl:text>
 			</marc:subfield>
 		</xsl:if>
 	</xsl:template>	
