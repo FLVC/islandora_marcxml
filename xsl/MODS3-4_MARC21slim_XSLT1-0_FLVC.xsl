@@ -7,8 +7,16 @@
 	exclude-result-prefixes="mods xlink" 
 	xmlns:marc="http://www.loc.gov/MARC21/slim">
 <!-- 
+	MD 10/05/15
+		Added genre='periodical' map to 's' in Leader char07 bib level for serial designation in Mango feed.
 	
-    Mike Demers 1/15/15
+	Mike Demers 09/23/15
+		Fixed period added to colon before subtitle
+	
+	Mike Demers 03/16/15
+		Added subdivision subfields to name as subjects. Added Genre subfield to other 6XXs.
+    
+	Mike Demers 1/15/15
 		520 ind1 changed from '2' to '3' for displayLabel='Abstract'.
 		note @type=original location now maps to 535.
 	
@@ -242,6 +250,7 @@
 					<xsl:when test="mods:originInfo/mods:issuance='single unit'">m</xsl:when>
 					<xsl:when test="mods:originInfo/mods:issuance='integrating resource'">i</xsl:when>
 					<xsl:when test="mods:originInfo/mods:issuance='serial'">s</xsl:when>
+					<xsl:when test="mods:genre='periodical' and not (mods:originInfo/mods:issuance='monographic') or (mods:originInfo/mods:issuance='multipart monograph') or (mods:originInfo/mods:issuance='single unit')">s</xsl:when>
 					<xsl:otherwise>m</xsl:otherwise>
 				</xsl:choose>
 				<!-- 08 -->
@@ -1987,6 +1996,26 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
 				<xsl:for-each select="mods:titleInfo">
 					<xsl:call-template name="titleInfo"/>
 				</xsl:for-each>
+				<xsl:for-each select="/mods:genre">
+									<marc:subfield code="v">
+										<xsl:value-of select="."/>
+									</marc:subfield>
+								</xsl:for-each>
+								<xsl:for-each select="/mods:geographic">
+		<marc:subfield code="z">
+			<xsl:value-of select="."/>
+		</marc:subfield>
+	</xsl:for-each>
+	<xsl:for-each select="/mods:topic">
+		<marc:subfield code="x">
+			<xsl:value-of select="."/>
+		</marc:subfield>
+	</xsl:for-each>
+	<xsl:for-each select="/mods:temporal">
+		<marc:subfield code="y">
+			<xsl:value-of select="."/>
+		</marc:subfield>
+	</xsl:for-each>
 				<xsl:apply-templates select="*[position()>1]"/>				
 			</xsl:with-param>
 		</xsl:call-template>	
@@ -2031,7 +2060,28 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
 								<marc:subfield code="u">
 									<xsl:value-of select="."/>
 								</marc:subfield>
-							</xsl:for-each>
+								</xsl:for-each>
+								<!--3.2015 Add subfields-->
+								<xsl:for-each select="../mods:genre">
+									<marc:subfield code="v">
+										<xsl:value-of select="."/>
+									</marc:subfield>
+								</xsl:for-each>
+								<xsl:for-each select="../mods:geographic">
+		<marc:subfield code="z">
+			<xsl:value-of select="."/>
+		</marc:subfield>
+	</xsl:for-each>
+	<xsl:for-each select="../mods:topic">
+		<marc:subfield code="x">
+			<xsl:value-of select="."/>
+		</marc:subfield>
+	</xsl:for-each>
+	<xsl:for-each select="../mods:temporal">
+		<marc:subfield code="y">
+			<xsl:value-of select="."/>
+		</marc:subfield>
+	</xsl:for-each>
 							<xsl:apply-templates select="*[position()>1]"/>
 						</xsl:with-param>
 					</xsl:call-template>	
@@ -2056,8 +2106,14 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
 									<xsl:value-of select="."/>
 								</marc:subfield>
 							</xsl:for-each>
-							<!--<xsl:apply-templates select="*[position()>1]"/>-->
-							<xsl:apply-templates select="ancestor-or-self::mods:subject/*[position()>1]"/>
+							<xsl:for-each select="../mods:genre">
+									<marc:subfield code="v">
+										<xsl:value-of select="."/>
+									</marc:subfield>
+								</xsl:for-each>
+							<!--swapped statements 03.2015-->
+							<xsl:apply-templates select="*[position()>1]"/>
+							<!--<xsl:apply-templates select="ancestor-or-self::mods:subject/*[position()>1]"/>-->
 							
 						</xsl:with-param>
 					</xsl:call-template>	
@@ -2077,6 +2133,11 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
 									<xsl:value-of select="."/>
 								</marc:subfield>
 							</xsl:for-each>
+							<xsl:for-each select="../mods:genre">
+									<marc:subfield code="v">
+										<xsl:value-of select="."/>
+									</marc:subfield>
+								</xsl:for-each>
 							<xsl:apply-templates select="*[position()>1]"/>
 						</xsl:with-param>
 					</xsl:call-template>	
@@ -2093,6 +2154,11 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
 				<marc:subfield code="a">
 					<xsl:value-of select="*[1]"/>
 				</marc:subfield>
+				<xsl:for-each select="/mods:genre">
+									<marc:subfield code="v">
+										<xsl:value-of select="."/>
+									</marc:subfield>
+								</xsl:for-each>
 				<xsl:apply-templates select="*[position()>1]"/>
                                 <xsl:if test="@authority" >
                                    <xsl:if test="@authority!='lcsh' and @authority != 'lcshac' and @authority != 'mesh' and @authority != 'csh' and @authority !='nal' and @authority != 'rvm'">
@@ -2112,6 +2178,11 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
 				<marc:subfield code="a">
 					<xsl:value-of select="*[1]"/>
 				</marc:subfield>
+				<xsl:for-each select="/mods:genre">
+									<marc:subfield code="v">
+										<xsl:value-of select="."/>
+									</marc:subfield>
+								</xsl:for-each>
 				<xsl:apply-templates select="*[position()>1]"/>
 			</xsl:with-param>
 		</xsl:call-template>	
@@ -2194,7 +2265,12 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
 			<xsl:with-param name="subfields">
 				<marc:subfield code="a">
 					<xsl:value-of select="."/>
-				</marc:subfield>				
+				</marc:subfield>
+<xsl:for-each select="/mods:genre">
+									<marc:subfield code="v">
+										<xsl:value-of select="."/>
+									</marc:subfield>
+								</xsl:for-each>				
 			</xsl:with-param>
 		</xsl:call-template>	
 	</xsl:template>
@@ -2237,13 +2313,16 @@ test="string(number(mods:originInfo/mods:dateCreated[@point='end'])) != 'NaN'">
 				<xsl:otherwise><xsl:value-of select="../mods:nonSort"/><xsl:text> </xsl:text><xsl:value-of select="."/>		<!--addes space in absence of trailing space in MODS-->
 				</xsl:otherwise>
 				</xsl:choose>
-    <!--  Add an ending colon before subtitile if it doesn't already have one  -->
-		                <xsl:if test="../mods:subTitle and not(substring(., string-length(.)) = ':')">
+    <!--  Add an ending colon before subtitle if it doesn't already have one  -->
+		                <xsl:choose>
+						<xsl:when test="../mods:subTitle and not(substring(., string-length(.)) = ':')">
                                      <xsl:text> :</xsl:text>
-                                </xsl:if>  
+                                </xsl:when>
+						<xsl:otherwise>
                         <xsl:if test="position()=last() and not(substring(.,string-length(.)) = '.')">
                                      <xsl:text>.</xsl:text>
                                 </xsl:if>
+								</xsl:otherwise></xsl:choose>
 				
 			</marc:subfield>
 		</xsl:for-each>
