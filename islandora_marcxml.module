@@ -5,6 +5,9 @@
  * Defines all the hooks this module implements.
  */
 
+// Permissions.
+define('ISLANDORA_MARCXML_VIEW_PERMISSION', 'view marcxml output');
+
 /**
  * Implements hook_menu().
  */
@@ -16,7 +19,7 @@ function islandora_marcxml_menu() {
       'page callback' => 'islandora_marcxml_view',
       'page arguments' => array(2),
       'access callback' => 'islandora_marcxml_access_callback',
-      'access arguments' => array('marcxml permission', 2),
+      'access arguments' => array(2),
       'file' => 'includes/utilities.inc',
     ),
     'islandora/object/%islandora_object/download_mods_as_marcxml' => array(
@@ -25,7 +28,7 @@ function islandora_marcxml_menu() {
       'page callback' => 'islandora_marcxml_transform_mods_to_marcxml',
       'page arguments' => array(2),
       'access callback' => 'islandora_marcxml_access_callback',
-      'access arguments' => array('marcxml permission', 2),
+      'access arguments' => array(2),
       'delivery callback' => 'islandora_marcxml_xml_download',
       'file' => 'includes/utilities.inc',
     ),
@@ -33,14 +36,15 @@ function islandora_marcxml_menu() {
 }
 
 /**
- * Implements hook_permission.
+ * Implements hook_permission().
  */
 function islandora_marcxml_permission() {
   return array(
-    'marcxml permission' => array(
-      'title' => t('View MARCXML Tab'),
-      'description' => t('View MARCXML Tab'),
-  ));
+    ISLANDORA_MARCXML_VIEW_PERMISSION => array(
+      'title' => t('View MARCXML Output'),
+      'description' => t("View MODS to MARCXML output."),
+    ),
+  );
 }
 
 /**
@@ -71,8 +75,8 @@ function islandora_marcxml_xml_download($output) {
  *   TRUE if the user is allowed to access the marcxml interface, FALSE
  *   otherwise.
  */
-function islandora_marcxml_access_callback($permission, $object) {
-  return user_access($permission) && is_object($object) && isset($object['MODS']) && islandora_datastream_access(ISLANDORA_VIEW_OBJECTS, $object['MODS']);
+function islandora_marcxml_access_callback($object) {
+  return is_object($object) && isset($object['MODS']) && islandora_datastream_access(ISLANDORA_VIEW_OBJECTS, $object['MODS']) && user_access(ISLANDORA_MARCXML_VIEW_PERMISSION);
 }
 
 /**

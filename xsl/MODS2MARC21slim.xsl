@@ -864,7 +864,7 @@
 	</xsl:template>
 
 	<!-- 1/04 fix was 630 -->
-	<xsl:template match="mods:subject/mods:heirarchialGeographic">
+	<xsl:template match="mods:subject/mods:heirarchicalGeographic">
 		<xsl:call-template name="datafield">
 			<xsl:with-param name="tag">752</xsl:with-param>
 			<xsl:with-param name="subfields">
