@@ -5,6 +5,9 @@
  * Defines all the hooks this module implements.
  */
 
+// Permissions.
+define('ISLANDORA_MARCXML_VIEW_PERMISSION', 'view marcxml output');
+
 /**
  * Implements hook_menu().
  */
@@ -28,6 +31,18 @@ function islandora_marcxml_menu() {
       'access arguments' => array(2),
       'delivery callback' => 'islandora_marcxml_xml_download',
       'file' => 'includes/utilities.inc',
+    ),
+  );
+}
+
+/**
+ * Implements hook_permission().
+ */
+function islandora_marcxml_permission() {
+  return array(
+    ISLANDORA_MARCXML_VIEW_PERMISSION => array(
+      'title' => t('View MARCXML Output'),
+      'description' => t("View MODS to MARCXML output."),
     ),
   );
 }
@@ -61,7 +76,7 @@ function islandora_marcxml_xml_download($output) {
  *   otherwise.
  */
 function islandora_marcxml_access_callback($object) {
-  return is_object($object) && isset($object['MODS']) && islandora_datastream_access(ISLANDORA_VIEW_OBJECTS, $object['MODS']);
+  return is_object($object) && isset($object['MODS']) && islandora_datastream_access(ISLANDORA_VIEW_OBJECTS, $object['MODS']) && user_access(ISLANDORA_MARCXML_VIEW_PERMISSION);
 }
 
 /**
