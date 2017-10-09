@@ -80,7 +80,7 @@ function islandora_marcxml_transform_marc_to_html(AbstractObject $object) {
 function islandora_marcxml_populate_mods(AbstractObject $object, $file) {
   $created = FALSE;
   $transform_args = array(
-    'xsl' => drupal_get_path('module', 'islandora_marcxml') . '/xsl/MARC21slim2MODS3-4_FLVC.xsl',
+    'xsl' => drupal_get_path('module', 'islandora_marcxml') . '/xsl/MARC21slim2MODS3-6_FLVC.xsl',
     'input' => file_get_contents($file->uri),
   );
   $transformed_xml = trim(islandora_marcxml_run_xsl_transform($transform_args));
