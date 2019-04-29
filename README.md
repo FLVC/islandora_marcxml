@@ -17,9 +17,9 @@ Install as usual, see [this](https://drupal.org/documentation/install/modules-th
 
 ## Configuration
 
-There are no configuration options available for the MARCXML module in Drupal. Enabling the module adds the MARCXML tab to all solution packs for all users with permissions to view Fedora objects, and makes the MARCXML upload option available for all content models during ingest.
+This module provides the ability to optionally allow a user to re-transform a MARCXML file to MODS after initial upload. This is configurable in Administration » Islandora » Islandora Utility Modules » Islandora MARCXML (admin/islandora/tools/islandora_marcxml).
 
-Permissions to control who may _Download PREMIS metadata_ and _View PREMIS metadata_ are available at Administration » People » Permissions (admin/people/permissions).
+Permissions to control who may _View MARCXML output_ are available at Administration » People » Permissions (admin/people/permissions).
 
 ## Documentation
 
@@ -36,7 +36,7 @@ Having problems or solved a problem? Check out the Islandora google groups for a
 
 Current maintainers:
 
-* [Jordan Dukart](https://github.com/jordandukart)
+* [Caleb Derven](https://github.com/cderven)
 
 ## Development
 
