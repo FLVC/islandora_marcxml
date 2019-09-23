@@ -364,7 +364,7 @@ test="string(number(substring(mods:originInfo/mods:dateCreated[@point='end'],1,4
 				<!-- 15-17 -->	
 				<xsl:choose>
 					<!-- v3 place -->
-					<xsl:when test="mods:originInfo/mods:place/mods:placeTerm[@type='code'][@authority='marccountry']">
+					<xsl:when test="mods:originInfo/mods:place/mods:placeTerm[@type='code'][@authority='marccountry'] and string-length(mods:originInfo/mods:place/mods:placeTerm[@type='code'][@authority='marccountry']) &lt;= 3">
 						<!-- v3 fixed marc:code reference and authority change-->
 						<xsl:value-of select="mods:originInfo/mods:place/mods:placeTerm[@type='code'][@authority='marccountry']"/>
 						<!-- 1/04 fix -->
