@@ -1102,6 +1102,9 @@ test="string(number(substring(mods:originInfo/mods:dateCreated[@point='end'],1,4
                            <xsl:when test="//mods:typeOfResource='still image' and substring(mods:role/mods:roleTerm,1,2) ='ph'" >
                                  <xsl:text>100</xsl:text>
                            </xsl:when>
+                           <xsl:when test="substring(mods:role/mods:roleTerm,1,3)='aut'" >
+                                 <xsl:text>100</xsl:text>
+                           </xsl:when>
                            <xsl:otherwise>
                                  <xsl:text>700</xsl:text>
                            </xsl:otherwise>
@@ -2839,10 +2842,6 @@ test="string(number(substring(mods:originInfo/mods:dateCreated[@point='end'],1,4
 		</xsl:call-template>	
                 
 		<xsl:if test="../mods:typeOfResource" >
-                     <xsl:choose>   
-                        <!-- don't need these three because they are provided by Mango facet mapping file --> 
-                        <xsl:when test="../mods:typeOfResource='sound recording' or ../mods:typeOfResource='mixed material' or ../mods:typeOfResource='software, multimedia'" />
-                        <xsl:otherwise>              
                                <xsl:call-template name="datafield">
                                      <xsl:with-param name="tag">998</xsl:with-param>
                                      <xsl:with-param name="ind1">7</xsl:with-param>
@@ -2853,9 +2852,6 @@ test="string(number(substring(mods:originInfo/mods:dateCreated[@point='end'],1,4
 	                                  </marc:subfield>
                                      </xsl:with-param>
                                </xsl:call-template>
-                      
-                        </xsl:otherwise>
-                    </xsl:choose>
                 </xsl:if>
         </xsl:template>
 
